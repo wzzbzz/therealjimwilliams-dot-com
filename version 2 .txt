@@ -1,0 +1,40 @@
+
+For version 2 - the BASE model class will be the Word.
+
+Words will extend into Nouns, Verbs, Adjectives, Pronouns, etcetera.
+
+It will implement the most rudimentary aspects of the following concepts.
+
+A Noun - a person, place, object, or idea.
+each of these things will have certain attributes :
+People, objects : have mass.
+Places : size, walls, etc - also, it's a part of a region.
+The World is the superscope.
+
+continent
+Country
+State
+City
+House
+Street.
+Room
+
+A Verb - an action, or command, or something.
+
+redo command parsing.
+Create Dictionary.
+
+
+items->types = many to many
+
+Actor Class  - Performs Actions, has reactions.
+
+Object class - Acted upon, changes state, but has no verbs.
+
+Something "alive" acts and is acted upon.
+
+
+
+
+
+    
