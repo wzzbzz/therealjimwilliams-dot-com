@@ -1,0 +1,115 @@
+<?php
+/*
+ Database class for managing connections.
+ 
+ implement as Singleton just to get the hang.
+ 
+*/
+
+class DB {
+    
+    private static $m_pInstance;
+    private static $m_link;
+    public $last_error;
+    public $last_result;
+    public $last_query;
+    
+    private function DB()
+    {
+        // do mysql connection stuff.
+        // store link.
+        
+    }
+    
+    public static function getInstance() 
+    { 
+        if (!self::$m_pInstance) 
+        { 
+            self::$m_pInstance = new DB(); 
+        }
+        
+        if (!self::$m_link)
+        {
+            self::$m_link = self::connect();
+        }
+    
+        return self::$m_pInstance; 
+    }  
+    
+    public function connect($db = 'therealjimwilliams')
+    {
+        $m_link = mysql_connect('mysql.therealjimwilliams.com', 'theduke', 'atriedes');
+        
+        if (!$m_link){
+            echo "could not conect to database";
+        }
+        else{
+           // echo "connected";
+        }
+        
+        mysql_selectdb($db);
+        return $m_link;
+    }
+    
+    public function insert($i)
+    {
+        $sql = "INSERT INTO ".$i['table']." ";
+        
+        $keys = array();
+        
+        $vals = array();
+        
+        foreach($i['keyvals'] as $key=>$val){
+            
+            $keys[] = $key;
+            
+            $vals[] = "'".$val."'";
+            
+        }
+
+        $keys = implode(",", $keys);
+
+        
+        $vals = implode(",", $vals);
+        
+        $sql .= "(".$keys.") VALUES (".$vals.")";
+        $result = mysql_query($sql);
+        
+        return $result;
+    }
+    
+    
+    public function query($sql)
+    {
+        
+        $return = array();
+        
+        $result = mysql_query($sql);
+
+        $this->last_query = $sql;
+        
+        if (mysql_error()){
+            
+            $this->last_error=mysql_error();
+            
+        }
+        
+        else{
+            $this->last_error="";
+            if(!is_bool($result)){
+                while ($row = mysql_fetch_object($result)){
+                    
+                    $return[]=$row;
+                    
+                }
+            }
+            else{
+                $return = $result;
+            }
+            
+        }
+        
+        return $return;
+    }
+}
+?>
