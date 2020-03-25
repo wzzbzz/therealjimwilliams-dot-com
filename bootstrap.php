@@ -2,7 +2,7 @@
 //require_once('_lib/includer.php');
 //require_once('definitions.php');
 
-define ("BASEPATH",'/home/southsideslim/therealjimwilliams.com/');
+define ("BASEPATH",'/Users/James/Code/blackbart/therealjimwilliams.com/');
 
 
 //always be setting session

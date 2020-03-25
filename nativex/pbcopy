@@ -1,0 +1,5 @@
+
+Fatal error: Uncaught Error: Call to undefined method NativeX::classic_encrypt() in /Users/James/Code/blackbart/therealjimwilliams.com/nativex/cli.php:23
+Stack trace:
+#0 {main}
+  thrown in /Users/James/Code/blackbart/therealjimwilliams.com/nativex/cli.php on line 23

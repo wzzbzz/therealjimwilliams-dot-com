@@ -1,0 +1,14 @@
+<?php
+global $doc_root;
+_nativex();
+
+class [[username]]_NativeX extends NativeX{
+
+    function __construct()
+    {
+        diebug(get_cwd());
+        parent::__construct();
+    }
+    
+    
+}
