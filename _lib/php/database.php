@@ -38,7 +38,7 @@ class DB {
     
     public function connect($db = 'therealjimwilliams')
     {
-        $m_link = mysql_connect('mysql.therealjimwilliams.com', 'theduke', 'atriedes');
+        $m_link = mysqli_connect('mysql.therealjimwilliams.com', 'theduke', 'atriedes');
         
         if (!$m_link){
             echo "could not conect to database";
@@ -47,7 +47,7 @@ class DB {
            // echo "connected";
         }
         
-        mysql_selectdb($db);
+        mysql_select_db($db);
         return $m_link;
     }
     
@@ -73,7 +73,7 @@ class DB {
         $vals = implode(",", $vals);
         
         $sql .= "(".$keys.") VALUES (".$vals.")";
-        $result = mysql_query($sql);
+        $result = mysqli_query($sql);
         
         return $result;
     }
@@ -84,20 +84,20 @@ class DB {
         
         $return = array();
         
-        $result = mysql_query($sql);
+        $result = mysqli_query($sql);
 
         $this->last_query = $sql;
         
-        if (mysql_error()){
+        if (mysqli_error()){
             
-            $this->last_error=mysql_error();
+            $this->last_error=mysqli_error();
             
         }
         
         else{
             $this->last_error="";
             if(!is_bool($result)){
-                while ($row = mysql_fetch_object($result)){
+                while ($row = mysqli_fetch_object($result)){
                     
                     $return[]=$row;
                     
