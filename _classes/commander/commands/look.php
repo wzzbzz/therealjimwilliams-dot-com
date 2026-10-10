@@ -101,7 +101,20 @@ class look extends command{
         else{
             foreach($connections as $connection){
                 if ($door = $connection->get_restriction("door")){
-                    $exits .= "<div>A door leading ".$directions[strtoupper($connection->get_direction())]."</div>";
+                    $door_state = "";
+                    $door_row = $this->db->query("SELECT attributes FROM items WHERE id='".intval($door)."'");
+                    if (count($door_row)>0){
+                        $door_attr = json_decode($door_row[0]->attributes);
+                        if ($door_attr){
+                            if (!empty($door_attr->locked)){
+                                $door_state = " (locked)";
+                            }
+                            elseif (isset($door_attr->state)){
+                                $door_state = " (".$door_attr->state.")";
+                            }
+                        }
+                    }
+                    $exits .= "<div>A door leading ".$directions[strtoupper($connection->get_direction())].$door_state."</div>";
                 }
                 else{
                     $newloc = new Location();

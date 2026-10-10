@@ -38,7 +38,7 @@ class lock extends action{
         return $result;
     }
     
-    public function can($args){
+    public function can($args = null){
         $words = array();
         foreach($args as $arg){
             $words[]="'".$arg."'";
@@ -144,7 +144,15 @@ class lock extends action{
         $keys = $this->db->query($sql);
         foreach($keys as $key){
             $attributes = json_decode($key->attributes);
-            if ($attributes->opens==0 || $attributes->opens=$item->id){
+            $opens = $attributes->opens;
+            if ($opens==0 || $opens===null){
+                // skeleton key: opens anything
+                return true;
+            }
+            if (!is_array($opens)){
+                $opens = array($opens);
+            }
+            if (in_array((string)$item->item_id, array_map("strval", $opens))){
                 return true;
             }
         }

@@ -36,9 +36,9 @@ class say extends command{
         
         $event->save();
         
-        $result['type']="OUTPUT";
-        $result['data']="";
-        
+        $result['action']="OUTPUT";
+        $result['data']="You say, \"".$statement."\"";
+        return $result;
     }
 }
 
