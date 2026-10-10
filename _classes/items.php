@@ -284,7 +284,7 @@ class item{
         $item_type_values = implode(",",$item_type_values);
         $sql = "INSERT INTO items (name,type_id,title,description,attributes) VALUES ($item_type_values)";
         $item = $this->db->query($sql);
-        $id = mysql_insert_id();
+        $id = $this->db->insert_id();
         $sql = "INSERT into item_locations (item_id, location_id) VALUES ($id,0)";
         $this->db->query($sql);
         return $id;

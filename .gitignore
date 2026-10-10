@@ -1,0 +1,4 @@
+.DS_Store
+*/.DS_Store
+# generated per-user nativex scaffolding (runtime artifact)
+_lib/php/nativex/users/

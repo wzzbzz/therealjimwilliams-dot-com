@@ -10,7 +10,7 @@ require_once("_lib/php/user/user.php");
 
 class look extends command{
     
-    public function _execute(){
+    public function _execute($args = null){
         
         $user = new user();
         if (!($user->session_logged_in($this->session_id))){
@@ -23,7 +23,7 @@ class look extends command{
         $user->set($user_id);
         $location_data = $user->get_location($user_id);
         
-        if (count($location_data)==0){
+        if (empty($location_data)){
             //user is nowhere.  Move to limbo.
             $user->set_location($user_id, 1);
             $location_data = $user->get_location($user_id);

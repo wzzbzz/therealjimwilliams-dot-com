@@ -44,7 +44,7 @@ function _events(){
     global $docroot;
     require_once(BASEPATH."/_classes/events.php");
     $events = new events();
-    return events;
+    return $events;
 }
 
 function _event(){

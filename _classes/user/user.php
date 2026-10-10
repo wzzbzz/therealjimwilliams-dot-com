@@ -64,7 +64,7 @@ class user{
         $id = $result[0]->id;
         $this->db->insert(array('table'=>"live_sessions", 'keyvals'=>array('user_id'=>$id, "session_id"=>$s)));
         
-        echo mysql_error();
+        
     }
     
     public function get_user_location($user_id){

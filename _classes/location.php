@@ -243,7 +243,7 @@ class Location{
         $sql = "INSERT INTO locations (name,title,short_desc,long_desc,owner,restrictions,attributes)
                 VALUES ('".$this->name."','".$this->title."','".$this->short_desc."','".$this->long_desc."','".$this->owner."','".$this->restrictions."','".$this->attributes."');";
         $this->db->query($sql);
-        $id = mysql_insert_id();
+        $id = $this->db->insert_id();
         return $id;
     }
     
@@ -416,7 +416,7 @@ class location_connections{
     public function create() {
         $sql = "INSERT INTO location_connections (current_loc,dest,direction,restrictions,failure_message) VALUES ('0','0','N','{}','')";
         $this->db->query($sql);
-        $this->set(mysql_insert_id());
+        $this->set($this->db->insert_id());
         return $this->id;
     }
     

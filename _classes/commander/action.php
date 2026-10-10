@@ -17,7 +17,7 @@ class action extends command{
         
     }
     
-    public function can(){
+    public function can($args = null){
         
     }
     

@@ -4,7 +4,7 @@ require_once(BASEPATH."/_classes/commander/command.php");
 
 class begin extends command{
     
-    public function _execute(){
+    public function _execute($args = null){
         $location = _location();
         $user = _user();
         $location_id = $location->get_location_by_name('welcome_center');

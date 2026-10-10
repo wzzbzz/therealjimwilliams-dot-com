@@ -50,7 +50,7 @@ class user{
     }
     
     public function create_user($u,$p){
-        $created = $this->db->insert(array('table'=>'users','keyvals'=>array("username"=>$u, "password"=>md5($p))));
+        $created = $this->db->insert(array('table'=>'users','keyvals'=>array("username"=>$u, "password"=>md5($p), "attributes"=>"{}")));
         if(true==$created)
         {
             $sql = "SELECT id FROM users WHERE username='$u'";
@@ -64,9 +64,8 @@ class user{
     
     public function initialize_character($user_id)
     {
-        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0"}';
+        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0,"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0"}';
         $sql = "UPDATE users SET attributes='$attr' WHERE id='".$user_id."'";
-        diebug($sql);
         $this->db->query($sql);
     }
     
@@ -104,7 +103,7 @@ class user{
     }
     
     public function checkpass($u,$p){
-        $sql = "SELECT * FROM users WHERE username='$u' AND password='".md5(strtoupper($p))."';";
+        $sql = "SELECT * FROM users WHERE username='$u' AND password='".md5($p)."';";
         $result = $this->db->query($sql);
         if (count($result))
             return true;

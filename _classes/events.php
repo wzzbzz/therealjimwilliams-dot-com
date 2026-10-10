@@ -93,7 +93,7 @@ class event{
                                                      )
                                     )
                               );
-            $this->id = mysql_insert_id();
+            $this->id = $this->db->insert_id();
         }
         else{
             $sql = "UPDATE events SET (name='".$this->name."', originator='".$this->originator."', event_script='".$this->event_script."', event_time='".$this->event_time."', location='".$this->location."' WHERE id='".$this->id."'";
