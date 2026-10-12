@@ -61,7 +61,7 @@ class Learner{
     
     private function wordExists($word){
         
-        $sql = "SELECT COUNT(id) as count FROM words WHERE word='$word'";
+        $sql = "SELECT COUNT(id) as count FROM words WHERE word='".$this->db->escape($word)."'";
         $result = $this->db->query($sql);
         $count = $result[0];
     
@@ -83,11 +83,11 @@ class Learner{
     
     private function incrementWord($word){
         
-        $sql = "SELECT usage_count FROM words WHERE word='$word'";
+        $sql = "SELECT usage_count FROM words WHERE word='".$this->db->escape($word)."'";
         $result = $this->db->query($sql);
         $count = $result[0]->usage_count;
         $count++;
-        $sql = "UPDATE words set usage_count = '$count' WHERE word='$word'";
+        $sql = "UPDATE words set usage_count = '$count' WHERE word='".$this->db->escape($word)."'";
         $result = $this->db->query($sql);
         
         return $count;

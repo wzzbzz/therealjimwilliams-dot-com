@@ -18,14 +18,6 @@ class commander{
         $s = trim($s);
         
         $s = $this->swap_alias($s);
-        
-        if (strpos($s, "'")>-1){
-            $result = array();
-            $result['action'] = "OUTPUT";
-            $result['data'] = "INVALID COMMAND : $s";
-            
-            return $result;
-        }
         $commands = explode(" ",$s);
         $command = strtolower(array_shift($commands));
         
@@ -54,7 +46,7 @@ class commander{
     
     private function is_command($s){
         
-        $sql = "SELECT id, listed FROM commands WHERE command='".strtoupper($s)."'";
+        $sql = "SELECT id, listed FROM commands WHERE command='".$this->db->escape(strtoupper($s))."'";
         $command = $this->db->query($sql);
         
     
@@ -96,7 +88,7 @@ class commander{
     
     private function swap_alias($c){
         
-        $sql = "SELECT alias FROM command_alias WHERE command='".strtoupper($c)."'";
+        $sql = "SELECT alias FROM command_alias WHERE command='".$this->db->escape(strtoupper($c))."'";
 
         $result = $this->db->query($sql);
 

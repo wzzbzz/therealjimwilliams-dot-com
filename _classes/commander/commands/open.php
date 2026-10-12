@@ -26,8 +26,11 @@ class open extends action{
             $user = _user();
             $user_id = $user->get_logged_in_user_id();
             $user_loc = $user->get_location($user_id);
+            $sql = "SELECT dest FROM location_connections WHERE restrictions='{\"door\":".$can->item->item_id."}' AND current_loc='".$user_loc->id."'";
+            $con = $this->db->query($sql);
             $user_loc = $user_loc->id;
-            $this->register_event('open',$user_id,$user_loc);            
+            $this->register_event('open',$user_id,$user_loc);
+            if (count($con) > 0){ $this->register_event('open',$user_id,$con[0]->dest); }
         }
         else{
             $result = array();
@@ -38,7 +41,7 @@ class open extends action{
         return $result;
     }
     
-    public function can($args){
+    public function can($args = null){
         $words = array();
         foreach($args as $arg){
             $words[]="'".$arg."'";

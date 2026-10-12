@@ -245,10 +245,12 @@ class item{
     
     //takes a phrase and checks to see if it describes an item, and returns the item name / id.
     public function is_item($words){
+        if (!is_array($words)) $words = array($words);
         $words_in=array();
         foreach($words as $word){
             $words_in[]="'".$word."'";    
         }
+        if (count($words_in)==0) return false;
         $words = implode(",",$words_in);
         $sql = "SELECT * from item_types WHERE name IN ($words)";
         $item_type = $this->db->query($sql);
@@ -261,7 +263,7 @@ class item{
     public function get_type_field($field){
         $sql = "SELECT $field FROM item_types WHERE id='".$this->type_id."'";
         $type_field = $this->db->query($sql);
-        if (count($field)==0){
+        if (count($type_field)==0){
             return false;
         }
         return $type_field[0]->$field;

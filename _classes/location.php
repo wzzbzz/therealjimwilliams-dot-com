@@ -118,18 +118,17 @@ class Location{
     }
     
     private function restriction_door($door_id){
-                $return = array();
                 _items();
                 $item = new item();
                 $door = $item->get_item($door_id);
 
+                if (!$door){ return false; }            // missing door item -> treat as impassable, not open
+
                 $attributes = json_decode($door->attributes);
 
-                if ($attributes->state=="closed"){
-                    return false;
-                }
-                else
-                    return true;
+                if (!$attributes || !isset($attributes->state)){ return false; }
+
+                return ($attributes->state != "closed");
         
     }
     
@@ -241,7 +240,7 @@ class Location{
         //create a limbo
         $this->set(1);
         $sql = "INSERT INTO locations (name,title,short_desc,long_desc,owner,restrictions,attributes)
-                VALUES ('".$this->name."','".$this->title."','".$this->short_desc."','".$this->long_desc."','".$this->owner."','".$this->restrictions."','".$this->attributes."');";
+                VALUES ('".$this->db->escape($this->name)."','".$this->db->escape($this->title)."','".$this->db->escape($this->short_desc)."','".$this->db->escape($this->long_desc)."','".$this->db->escape($this->owner)."','".$this->db->escape($this->restrictions)."','".$this->db->escape($this->attributes)."');";
         $this->db->query($sql);
         $id = $this->db->insert_id();
         return $id;
@@ -251,7 +250,7 @@ class Location{
         if ($this->id==null){
             return false;
         }
-        $sql = "UPDATE locations SET name='".$this->name."', title='".$this->title."', long_desc='".$this->long_desc."', short_desc='".$this->short_desc."', owner='".$this->owner."', restrictions='".$this->restrictions."', attributes='".$this->attributes."' WHERE id='".$this->id."'";
+        $sql = "UPDATE locations SET name='".$this->db->escape($this->name)."', title='".$this->db->escape($this->title)."', long_desc='".$this->db->escape($this->long_desc)."', short_desc='".$this->db->escape($this->short_desc)."', owner='".$this->db->escape($this->owner)."', restrictions='".$this->db->escape($this->restrictions)."', attributes='".$this->db->escape($this->attributes)."' WHERE id='".$this->id."'";
         $this->db->query($sql);
         return true;
     }
@@ -289,7 +288,7 @@ class Location{
     public function get_items(){
         $sql = "SELECT * FROM item_locations WHERE location_id='".$this->id."'";
         $loc_items = $this->db->query($sql);
-        if (count($items)==0){
+        if (count($loc_items)==0){
             return array();
         }
         $items = array();

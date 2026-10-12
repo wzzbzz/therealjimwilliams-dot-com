@@ -65,6 +65,12 @@ class make extends action{
                             $result['data']="who do you think you are, the real jim williams?";
                             return $result;
                         }
+                        if (!$user->get_location_id()){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="You have no location yet - run 'begin' first.";
+                            return $result;
+                        }
                         //require a connection in a direction
                         if (!$args[1]){
                             $result=array();
@@ -112,6 +118,12 @@ class make extends action{
                             $result=array();
                             $result['action']="OUTPUT";
                             $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
+                        if (!$user->get_location_id()){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="You have no location yet - run 'begin' first.";
                             return $result;
                         }
                         $id = $item->create_item($args[0]);

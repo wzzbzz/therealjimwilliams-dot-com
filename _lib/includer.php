@@ -79,7 +79,7 @@ function _basejs(){
 
 ?>
     <!-- include from google.  they are watching you. -->
-    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
     <!-- <script src="<?php echo $docroot?>/_lib/js/modernizr.js"></script> -->
     <script>
         

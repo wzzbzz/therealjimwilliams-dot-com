@@ -35,3 +35,7 @@ of them is safe.)
 - `0001_add_elevate_command.sql` — registers the `ELEVATE` command row so the
   `elevate <username>` admin command (in
   `_classes/commander/commands/elevate.php`) is dispatchable.
+- `0002_create_missing_door_items.sql` — creates the 4 door items (ids 4, 5,
+  11, 76; `item_types.id` = 2) referenced by `location_connections.restrictions`
+  but missing from `items`, and places each in both adjoining rooms. Pairs with
+  the `location::restriction_door()` fail-closed hardening (playfix issue #3).
