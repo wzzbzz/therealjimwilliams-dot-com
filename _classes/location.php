@@ -203,7 +203,7 @@ class Location{
     
     public function get_id(){ return $this->id; }
     public function get_name(){ return $this->name; }
-    public function set_name($val){ diebug($val);$this->name = $val; return true; }
+    public function set_name($val){ $this->name = $val; return true; }
     
     public function get_title(){ return $this->title; }
     public function set_title($val){ $this->title = $val; return true; }
@@ -376,6 +376,7 @@ class location_connections{
         return true;
     }
     
+    public function get_id(){ return $this->id; }
     public function get_current_loc(){ return $this->current_loc; }
     public function set_current_loc($loc){ $this->current_loc = $loc; return true; }
     public function get_dest(){ return $this->dest; }
@@ -420,8 +421,15 @@ class location_connections{
     }
     
     public function get_reverse_connection(){
-        
-        $sql = "SELECT * from location_connections WHERE current_loc='".$this->dest."' AND dest = '".$this->current_loc."'";
+
+        // the way back: from dest to current_loc in the opposite direction, so a
+        // second connection between the same two rooms isn't mistaken for it
+        $opposites = array("n"=>"s","s"=>"n","e"=>"w","w"=>"e","up"=>"down","down"=>"up");
+        $sql = "SELECT * from location_connections WHERE current_loc='".intval($this->dest)."' AND dest = '".intval($this->current_loc)."'";
+        $dir = strtolower($this->direction);
+        if (isset($opposites[$dir])){
+            $sql .= " AND LOWER(direction)='".$opposites[$dir]."'";
+        }
         $rev = $this->db->query($sql);
         if (count($rev)==0)
         {

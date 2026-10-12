@@ -104,13 +104,26 @@ class make extends action{
                                 $item->set_attribute("key",$key_id);
                                 $item->save_attributes();
                             }
+                            // optional alias: "make door W [locked] office door"
+                            $alias_words = array_slice($args, 2);
+                            if (isset($alias_words[0]) && $alias_words[0]=="locked"){
+                                $alias_words = array_slice($alias_words, 1);
+                            }
+                            if (count($alias_words) > 0){
+                                $alias = implode(" ", $alias_words);
+                                $item->set_attribute("alias", strtolower($alias));
+                                $item->save_attributes();
+                                $item->set_title($alias);
+                            }
                             $restriction = array();
                             $restriction['door']=$id;
                             $connection->set_restriction("door",$id);
                             $connection->save();
                             $rev_connection = $connection->get_reverse_connection();
-                            $rev_connection->set_restriction("door",$id);
-                            $rev_connection->save();
+                            if ($rev_connection){
+                                $rev_connection->set_restriction("door",$id);
+                                $rev_connection->save();
+                            }
                         }
                     }
                     else{

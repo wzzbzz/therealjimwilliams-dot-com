@@ -14,7 +14,14 @@ class events{
     }
     
     public function get_scheduled_user_events($user_id){
-        $sql = "SELECT *, NOW() from event_user_sched join events ON event_user_sched.event_id = events.id WHERE event_user_sched.user_id='".$user_id."';";
+        // live_sessions never expire, so events keep queuing for players who
+        // aren't polling; on their next poll they'd get the whole backlog (a
+        // pile of "is now here"). Drop queued rows older than a minute, and rows
+        // whose event is gone, so a poll only delivers what just happened.
+        $sql = "DELETE event_user_sched FROM event_user_sched LEFT JOIN events ON event_user_sched.event_id = events.id WHERE event_user_sched.user_id='".intval($user_id)."' AND (events.id IS NULL OR events.event_time < NOW() - INTERVAL 60 SECOND)";
+        $this->db->query($sql);
+
+        $sql ="SELECT *, NOW() from event_user_sched join events ON event_user_sched.event_id = events.id WHERE event_user_sched.user_id='".$user_id."' ORDER BY events.event_time, events.id;";
         $events = $this->db->query($sql);
 
         return $events;

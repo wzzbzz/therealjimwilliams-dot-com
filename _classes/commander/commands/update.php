@@ -24,6 +24,9 @@ class update extends action{
         }
         
         $obj = array_shift($args);
+        if ($obj=="item"){
+            return $this->update_item($user,$args);
+        }
         if($obj!="location"){
             $result=array();
             $result['action']="OUTPUT";
@@ -74,6 +77,79 @@ class update extends action{
         $result = array();
         $result['action']="OUTPUT";
         $result['data']="You've updated the $field";
+        return $result;
+    }
+
+    // update item <door phrase> <alias|title> <words...>
+    // sets the alias or title of a matching item in the current room, so a door
+    // (or other item) built bare can be named in-game without raw SQL. The door
+    // phrase picks one item the same way open/close/lock do: "door",
+    // "office door", "door north".
+    private function update_item($user,$args){
+        if (!$user->user_has_permission('manage_items')){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']="who do you think you are, the real jim williams?";
+            return $result;
+        }
+
+        $selector = array();
+        while (count($args)>0 && !in_array($args[0], array("alias","title"))){
+            $selector[] = array_shift($args);
+        }
+        $field = array_shift($args);
+
+        if (count($selector)==0 || !$field){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']="Usage: update item <type> [which] <alias|title> <words>";
+            return $result;
+        }
+        if (count($args)==0){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']="Please enter a value : update item ".implode(" ",$selector)." $field <words>";
+            return $result;
+        }
+        $value = implode(" ", $args);
+
+        $user->set($user->get_logged_in_user_id());
+        if (!$user->get_location_id()){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']="You have no location yet - run 'begin' first.";
+            return $result;
+        }
+
+        if (!($item_type = $this->find_item_type($selector))){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']="I don't know what that is.";
+            return $result;
+        }
+        $found = $this->resolve_item($item_type, $selector);
+        if ($found->item===null){
+            $result=array();
+            $result['action']="OUTPUT";
+            $result['data']=$found->reason;
+            return $result;
+        }
+        $target = $found->item;
+
+        _items();
+        $item = new item();
+        $item->set($target->item_id);
+        if ($field=="alias"){
+            $item->set_attribute("alias", strtolower($value));
+            $item->save_attributes();
+        }
+        else{
+            $item->set_title($value);
+        }
+
+        $result=array();
+        $result['action']="OUTPUT";
+        $result['data']="You've updated the ".$field;
         return $result;
     }
     

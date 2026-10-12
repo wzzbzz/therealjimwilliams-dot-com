@@ -171,7 +171,7 @@ class item{
         if ($attributes == null){
             $attributes = $this->attributes;
         }
-        $sql = "UPDATE items SET attributes='$attributes' WHERE id='".$this->id."'";
+        $sql = "UPDATE items SET attributes='".$this->db->escape($attributes)."' WHERE id='".intval($this->id)."'";
         $result = $this->db->query($sql);
         return;
     }
@@ -248,7 +248,7 @@ class item{
         if (!is_array($words)) $words = array($words);
         $words_in=array();
         foreach($words as $word){
-            $words_in[]="'".$word."'";    
+            $words_in[]="'".$this->db->escape($word)."'";    
         }
         if (count($words_in)==0) return false;
         $words = implode(",",$words_in);
@@ -269,6 +269,10 @@ class item{
         return $type_field[0]->$field;
     }
     
+    public function set_title($val){
+        $this->update_field("title", $this->db->escape($val));
+        $this->title = $val;
+    }
     protected function update_field($field,$val){
         $sql = "UPDATE items SET $field='$val' WHERE id='".$this->id."'";
         $this->db->query($sql);
