@@ -241,7 +241,7 @@ class Location{
         //create a limbo
         $this->set(1);
         $sql = "INSERT INTO locations (name,title,short_desc,long_desc,owner,restrictions,attributes)
-                VALUES ('".$this->name."','".$this->title."','".$this->short_desc."','".$this->long_desc."','".$this->owner."','".$this->restrictions."','".$this->attributes."');";
+                VALUES ('".$this->db->escape($this->name)."','".$this->db->escape($this->title)."','".$this->db->escape($this->short_desc)."','".$this->db->escape($this->long_desc)."','".$this->db->escape($this->owner)."','".$this->db->escape($this->restrictions)."','".$this->db->escape($this->attributes)."');";
         $this->db->query($sql);
         $id = $this->db->insert_id();
         return $id;
@@ -251,7 +251,7 @@ class Location{
         if ($this->id==null){
             return false;
         }
-        $sql = "UPDATE locations SET name='".$this->name."', title='".$this->title."', long_desc='".$this->long_desc."', short_desc='".$this->short_desc."', owner='".$this->owner."', restrictions='".$this->restrictions."', attributes='".$this->attributes."' WHERE id='".$this->id."'";
+        $sql = "UPDATE locations SET name='".$this->db->escape($this->name)."', title='".$this->db->escape($this->title)."', long_desc='".$this->db->escape($this->long_desc)."', short_desc='".$this->db->escape($this->short_desc)."', owner='".$this->db->escape($this->owner)."', restrictions='".$this->db->escape($this->restrictions)."', attributes='".$this->db->escape($this->attributes)."' WHERE id='".$this->id."'";
         $this->db->query($sql);
         return true;
     }

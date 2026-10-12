@@ -62,6 +62,11 @@ class DB {
         return $m_link;
     }
     
+    public function escape($s)
+    {
+        return mysqli_real_escape_string(self::$m_link, (string)$s);
+    }
+
     public function insert($i)
     {
         $sql = "INSERT INTO ".$i['table']." ";
@@ -74,7 +79,7 @@ class DB {
             
             $keys[] = $key;
             
-            $vals[] = "'".$val."'";
+            $vals[] = "'".$this->escape($val)."'";
             
         }
 
