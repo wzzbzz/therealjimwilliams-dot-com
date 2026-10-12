@@ -118,18 +118,17 @@ class Location{
     }
     
     private function restriction_door($door_id){
-                $return = array();
                 _items();
                 $item = new item();
                 $door = $item->get_item($door_id);
 
+                if (!$door){ return false; }            // missing door item -> treat as impassable, not open
+
                 $attributes = json_decode($door->attributes);
 
-                if ($attributes->state=="closed"){
-                    return false;
-                }
-                else
-                    return true;
+                if (!$attributes || !isset($attributes->state)){ return false; }
+
+                return ($attributes->state != "closed");
         
     }
     
