@@ -39,3 +39,6 @@ of them is safe.)
   11, 76; `item_types.id` = 2) referenced by `location_connections.restrictions`
   but missing from `items`, and places each in both adjoining rooms. Pairs with
   the `location::restriction_door()` fail-closed hardening (playfix issue #3).
+- `0003_add_disconnect_command.sql` — registers the `disconnect` command row so
+  the `disconnect <dir>` admin command (in
+  `_classes/commander/commands/disconnect.php`) is dispatchable (playfix issue #6).

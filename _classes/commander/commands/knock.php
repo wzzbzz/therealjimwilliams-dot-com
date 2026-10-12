@@ -44,91 +44,35 @@ class knock extends action{
         else{
             $result = array();
             $result['action']="OUTPUT";
-            $result['data'] = "";
+            $result['data'] = $can->reason;
         }
         
         return $result;
     }
     
     public function can($args = null){
-        $words = array();
-        foreach($args as $arg){
-            $words[]="'".$arg."'";
-        }
         $return = new stdClass();
+        $return->result=false;
        
-        if (!($item_type = $this->is_item($words))){
-            $return->result=false;
+        if (!($item_type = $this->find_item_type($args))){
             $return->reason="I don't know what that is.";
         }
+        elseif (array_search("lock",json_decode($item_type->actions))===FALSE){
+            $return->reason="You knocked on it.";
+        }
         else{
-            $actions = $item_type->actions;
-            $actions = json_decode($actions);
-            if (array_search("lock",$actions)===FALSE){
-                $return->result=false;
-                $return->reason="You knocked on it.";
+            $found = $this->resolve_item($item_type, $args);
+            $item = $found->item;
+            if ($item===null){
+                $return->reason=$found->reason;
             }
             else{
-                if (!($items=$this->is_item_in_location($item_type))){
-                    $return->result=false;
-                    $return->reason="You can't see a ".$item_type->name." here";
-                }
-                else{
-                    
-                    if (count($items)>1){
-                        
-                        $phrase = implode(" ", $args);
-                        $phrase = strtolower(str_replace("the ","",$phrase));
-                        
-                        foreach($items as $item){
-                            $attributes = json_decode($item->attributes);
-                            $alias = strtolower($attributes->alias);
- 
-                            if ($alias==$phrase){
-                                $return->result=true;
-                                $return->item = $item;
-                                break;
-                            }
-                            else{
-                                $return->result=false;
-                                $return->reason="Which ".$item_type->name." did you mean?";
-                            }
-                        }
-                    }
-                    
-                    else{
-                        $item=$items[0];
-                        $return->result=true;
-                        $return->item=$item;
-                    }
-                    
-                }
-                
+                $return->result=true;
+                $return->item=$item;
             }
         }
         
         return $return;
-    }
-    
-    private function is_item($words){
-        $words = implode(",",$words);
-        $sql = "SELECT * from item_types WHERE name IN ($words)";
-
-        $item_type = $this->db->query($sql);
-        if (count($item_type)==0)
-            return false;
-        return $item_type[0];
-    }
-    
-    private function is_item_in_location($item_type){
-        $user = _user();
-        $user_id = $user->get_logged_in_user_id();
-        $location = $user->get_location($user_id);
-        $sql = "SELECT * FROM item_locations JOIN items ON items.ID = item_locations.item_id JOIN item_types ON items.type_id = item_types.id WHERE item_types.id = '".$item_type->id."' AND item_locations.location_id='".$location->id."'";
-        $items = $this->db->query($sql);
-        if (count($items)==0)
-            return false;
-        return $items;
     }
     
     

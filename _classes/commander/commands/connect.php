@@ -42,6 +42,14 @@ class connect extends action{
         
         $loc->set($user->get_location_id());
 
+        $dest_check = _location();
+        if (!$dest_check->set($args[0])){
+            $result=array();
+            $result["action"]="OUTPUT";
+            $result["data"]="No such location #".intval($args[0]).".";
+            return $result;
+        }
+
         $loc_conn = new location_connections();
         $id = $loc_conn->create();
         
