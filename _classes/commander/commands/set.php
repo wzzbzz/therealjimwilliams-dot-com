@@ -1,7 +1,7 @@
 <?php
 require_once(BASEPATH."/_classes/commander/action.php");
 
-class update extends action{
+class set extends action{
     
     public function __construct(){
         
@@ -9,8 +9,7 @@ class update extends action{
     
     public function _execute($args){
         $user = _user();
-        if ($user_id = $user->get_logged_in_user_id() != 7)
-        {
+        if (!$user->user_has_permission('manage_locations')){
             $result=array();
             $result['action']="OUTPUT";
             $result['data']="who do you think you are, the real jim williams?";

@@ -7,14 +7,6 @@ class make extends action{
     
     public function _execute($args){
         $user = _user();
-       if ($user_id = $user->get_logged_in_user_id() != 7)
-        {
-            $result=array();
-            $result['action']="OUTPUT";
-            $result['data']="who do you think you are, the real jim williams?";
-            return $result;
-        }
-        
         _items();
         $user->set($user->get_logged_in_user_id());
         
@@ -36,6 +28,12 @@ class make extends action{
                 if (!$item_type=$item->is_item($args)){
                     //is the command a location?
                     if ($args[0]=="location"){
+                        if (!$user->user_has_permission('manage_locations')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
                         $location = _location();
                         $new_id = $location->create();
                         if (!$new_id){
@@ -61,6 +59,12 @@ class make extends action{
                     
                     //is it a door
                     if ($args[0]=="door"){
+                        if (!$user->user_has_permission('manage_items')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
                         //require a connection in a direction
                         if (!$args[1]){
                             $result=array();
@@ -104,6 +108,12 @@ class make extends action{
                         }
                     }
                     else{
+                        if (!$user->user_has_permission('manage_items')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
                         $id = $item->create_item($args[0]);
                         $item->set($id);
                         $item->set_location($user->get_location_id());
