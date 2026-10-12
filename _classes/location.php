@@ -289,7 +289,7 @@ class Location{
     public function get_items(){
         $sql = "SELECT * FROM item_locations WHERE location_id='".$this->id."'";
         $loc_items = $this->db->query($sql);
-        if (count($items)==0){
+        if (count($loc_items)==0){
             return array();
         }
         $items = array();

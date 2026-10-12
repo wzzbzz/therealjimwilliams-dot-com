@@ -21,15 +21,15 @@ class command{
     
     public function get_js(){
         $filename = BASEPATH."/_classes/commander/commands/js/".$this->command_name.".js";
-        $handle = fopen($filename,"r");
-        $js = fread($handle, filesize($filename));
-        return $js;
+        if (!is_file($filename) || filesize($filename)===0){ return ""; }
+        $js = file_get_contents($filename);
+        return ($js===false) ? "" : $js;
     }
     
     public function register_event($name, $user_id, $user_loc, $callback=null,$time=null){
         $filename = BASEPATH."/_classes/commander/commands/js/$name.js";
-        $handle = fopen($filename,"r");
-        $js = fread($handle, filesize($filename));
+        $js = (is_file($filename) && filesize($filename) > 0) ? file_get_contents($filename) : "";
+        if ($js===false){ $js = ""; }
         _event();
         $user = _user();
         $the_event = array();
