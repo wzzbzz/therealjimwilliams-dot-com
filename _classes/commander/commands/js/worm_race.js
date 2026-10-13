@@ -1,10 +1,12 @@
 /* Plays a worm race in the terminal; sent by the watch command. Every player
-   gets the same saved tick sequence, so everyone watching sees the same race.
-   The loop numbers match _classes/worm_races.php (from the old wormcraft page). */
+   gets the same saved tick sequence and the same per-lane thresholds, so
+   everyone watching sees the same race. The loop numbers match
+   _classes/worm_races.php (from the old wormcraft page): a worm steps when its
+   number is under its early threshold, or its late one once past halfway. */
 (function(r){
     var BODY = '//\\/\\/\\/\\/\\//\\/\\/', HEAD = '(&#8226;_&#8226;)', BLINK = '(-_-)';
-    var STEP_CHANCE = 20, STEP_PX = 5, DISTANCE = 600, TICK_MS = 28;
-    var lanes = r.ticks[0].length;
+    var STEP_PX = 5, DISTANCE = 600, TICK_MS = 28;
+    var lanes = r.lanes.length;
     var id = 'wormrace-' + r.id + '-' + new Date().getTime();
     var html = '<div id="' + id + '"><div class="track">';
     for (var i = 0; i < lanes; i++){
@@ -24,13 +26,14 @@
         if (leader < 0){ leader = lane; return; }
         if (pos[lane] > pos[leader]){
             leader = lane;
-            if (!quiet) msg.text('The worm in lane ' + (lane + 1) + ' takes the lead!');
+            if (!quiet) msg.html(r.lanes[lane].name + ' takes the lead!');
         }
     }
     function tick(quiet){
         var row = r.ticks[t];
         for (var i = 0; i < lanes; i++){
-            if (row[i] < STEP_CHANCE) step(i, quiet);
+            var threshold = pos[i] > DISTANCE / 2 ? r.lanes[i].late : r.lanes[i].early;
+            if (row[i] < threshold) step(i, quiet);
         }
         t++;
     }
@@ -41,7 +44,7 @@
         clearInterval(timer);
         clearInterval(blinker);
         worms.eq(leader).css('color', 'red');
-        msg.text('The worm in lane ' + (leader + 1) + ' is the winner!!');
+        msg.html(r.lanes[leader].name + ' is the winner!!');
     }
     function run(){
         timer = setInterval(function(){
@@ -65,6 +68,6 @@
     while (t < r.skip && t < r.ticks.length) tick(true);
     render();
     if (r.delay > 0) msg.text('The worms are lining up.');
-    else if (r.skip > 0 && leader >= 0) msg.text('The race is already on. The worm in lane ' + (leader + 1) + ' is out in front.');
+    else if (r.skip > 0 && leader >= 0) msg.html('The race is already on. ' + r.lanes[leader].name + ' is out in front.');
     setTimeout(run, r.delay);
 })({race});

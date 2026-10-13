@@ -48,3 +48,6 @@ of them is safe.)
 - `0005_add_worm_races.sql` — adds the `worm_races` table and registers the
   `watch` command. An admin marks the racetrack with
   `set location attribute racetrack yes`; players there type `watch`.
+- `0006_add_worm_stable.sql` — adds the `worms` table, the `weather` and
+  `lineup` columns on `worm_races`, and registers the `hatch` admin command.
+  An admin fills the stable with `hatch <name>`; races need at least two worms.

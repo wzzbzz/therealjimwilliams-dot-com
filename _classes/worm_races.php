@@ -5,17 +5,27 @@
 //
 // A race starts every SLOT seconds. Its whole run is a sequence of random
 // numbers made once and saved, so every player who watches replays the same
-// race: each tick every worm draws a number from 1 to 100 and steps forward if
-// it's under STEP_CHANCE. The loop numbers below are wormcraft's, which were
-// tuned by hand; keep them in sync with js/worm_race.js.
+// race: each tick every worm draws a number from 1 to 1000 and steps forward if
+// it's under that worm's threshold. The baseline (a 19% chance a tick) and the
+// loop numbers below are wormcraft's, which were tuned by hand; keep them in
+// sync with js/worm_race.js. Numbers run to 1000 rather than wormcraft's 100 so
+// a stat point can move the odds by half a percent instead of a whole one.
+//
+// A worm's threshold moves off the baseline with its stats (class worm below):
+// its Wriggle, the weather, its form (fatigue or rust), and, once it's past
+// halfway, its Stamina.
 class worm_races{
 
     const SLOT = 120;        // seconds between race starts
     const LANES = 5;
-    const STEP_CHANCE = 20;  // a worm steps when its number is under this
+    const ROLL = 1000;       // each tick's numbers run from 1 to ROLL
+    const STEP_CHANCE = 191; // baseline: a worm steps when its number is under this (19%)
+    const POINT = 5;         // how far one point of modifier moves a threshold (0.5%)
     const STEP_PX = 5;       // pixels per step
     const DISTANCE = 600;    // the leader wins once it's past this many pixels
     const TICK_MS = 28;      // milliseconds per tick
+    const MIN_CHANCE = 50;   // thresholds are clamped to this range
+    const MAX_CHANCE = 400;
 
     private $db;
 
@@ -30,14 +40,22 @@ class worm_races{
         return intval(floor($now / self::SLOT) * self::SLOT);
     }
 
-    // The race starting at $start, made and saved the first time it's asked for.
+    // The race starting at $start, made and saved the first time it's asked
+    // for. False when the stable has fewer than two worms.
     public function get_race($start){
         $start = intval($start);
         $rows = $this->db->query("SELECT * FROM worm_races WHERE start_time='$start'");
         if (count($rows)==0){
-            $race = $this->generate();
+            $weather = worm_weather::at($start);
+            $lineup = $this->pick_lineup($start, $weather);
+            if (count($lineup) < 2)
+                return false;
+            $race = $this->generate($lineup);
             // INSERT IGNORE: if two players ask at once, the first sequence wins.
-            $this->db->query("INSERT IGNORE INTO worm_races (start_time, ticks, winner) VALUES ('$start', '".json_encode($race['ticks'])."', '".intval($race['winner'])."')");
+            $this->db->query("INSERT IGNORE INTO worm_races (start_time, ticks, winner, weather, lineup) VALUES ('$start', '".json_encode($race['ticks'])."', '".intval($race['winner'])."', '".$this->db->escape($weather['name'])."', '".$this->db->escape(json_encode($lineup))."')");
+            if ($this->db->insert_id()){
+                $this->record_results($start, $lineup, $race['winner']);
+            }
             $rows = $this->db->query("SELECT * FROM worm_races WHERE start_time='$start'");
         }
         $race = $rows[0];
@@ -46,6 +64,8 @@ class worm_races{
             'start' => intval($race->start_time),
             'ticks' => json_decode($race->ticks),
             'winner' => intval($race->winner),
+            'weather' => worm_weather::named($race->weather),
+            'lineup' => json_decode($race->lineup, true),
         );
     }
 
@@ -65,19 +85,66 @@ class worm_races{
         return !in_array(strtolower(trim($attributes->racetrack)), array("", "no", "0", "false"));
     }
 
+    // The racecard for a race, as terminal output.
+    public function racecard($race){
+        $weather = $race['weather'];
+        $output = "<div>Weather: ".$weather['name'].". ".$weather['note']."</div>";
+        foreach ($race['lineup'] as $i=>$worm){
+            $stats = array();
+            foreach (worm::$STATS as $stat=>$abbr){
+                $stats[] = $abbr." ".$worm['stats'][$stat].($worm['rising'][$stat] ? "&uarr;" : "&darr;");
+            }
+            $output .= "<div>Lane ".($i+1).": ".htmlspecialchars($worm['name'])." &nbsp; ".implode(" &nbsp; ", $stats)." &nbsp; (".$worm['form'].")</div>";
+        }
+        return $output;
+    }
+
+    // The LANES worms nearest their sweet spot at $start, each with its stats,
+    // form and thresholds for this race. Lane order is random.
+    private function pick_lineup($start, $weather){
+        $worms = array();
+        foreach ($this->db->query("SELECT * FROM worms ORDER BY id") as $row){
+            $worm = new worm($row);
+            $worms[] = array('worm'=>$worm, 'off'=>$worm->off_sweet_spot($start), 'tiebreak'=>mt_rand());
+        }
+        usort($worms, function($a, $b){
+            if ($a['off'] != $b['off'])
+                return $a['off'] < $b['off'] ? -1 : 1;
+            return $a['tiebreak'] < $b['tiebreak'] ? -1 : 1;
+        });
+        $lineup = array();
+        foreach (array_slice($worms, 0, self::LANES) as $entry){
+            $lineup[] = $entry['worm']->race_entry($start, $weather);
+        }
+        shuffle($lineup);
+        return $lineup;
+    }
+
+    private function record_results($start, $lineup, $winner){
+        foreach ($lineup as $i=>$worm){
+            $won = ($i+1 == $winner) ? 1 : 0;
+            $this->db->query("UPDATE worms SET last_raced_at='".intval($start)."', races=races+1, wins=wins+$won WHERE id='".intval($worm['id'])."'");
+        }
+    }
+
     // Draw numbers until a worm wins. Same rules as wormcraft's loop: worms
     // move in lane order, a worm takes the lead only by passing the leader, and
-    // the race ends on the tick the leader is past DISTANCE. Lanes are 1-based.
-    private function generate(){
-        $positions = array_fill(1, self::LANES, 0);
+    // the race ends on the tick the leader is past DISTANCE. A worm uses its
+    // early threshold until it's past halfway, then its late one. Lanes are
+    // 1-based.
+    private function generate($lineup){
+        $lanes = count($lineup);
+        $positions = array_fill(1, $lanes, 0);
         $leader = null;
         $ticks = array();
         while (true){
             $tick = array();
-            for ($lane=1; $lane<=self::LANES; $lane++){
-                $n = mt_rand(1, 100);
+            for ($lane=1; $lane<=$lanes; $lane++){
+                $n = mt_rand(1, self::ROLL);
                 $tick[] = $n;
-                if ($n < self::STEP_CHANCE){
+                $worm = $lineup[$lane-1];
+                $threshold = $positions[$lane] > self::DISTANCE/2 ? $worm['late'] : $worm['early'];
+                if ($n < $threshold){
                     $positions[$lane] += self::STEP_PX;
                     if ($leader===null || $positions[$lane] > $positions[$leader])
                         $leader = $lane;
@@ -88,6 +155,174 @@ class worm_races{
                 break;
         }
         return array('ticks'=>$ticks, 'winner'=>$leader);
+    }
+}
+
+// A worm in the stable. Four D&D-style stats rolled 3d6 at hatching; each
+// swings up to BIO_SWING on its own biorhythm cycle counted from the hatch date.
+class worm{
+
+    public static $STATS = array('wriggle'=>'WRG', 'stamina'=>'STA', 'constitution'=>'CON', 'grit'=>'GRT');
+    public static $CYCLE_DAYS = array('wriggle'=>23, 'stamina'=>28, 'constitution'=>33, 'grit'=>38);
+    const BIO_SWING = 2;
+    const MAX_FORM_PENALTY = 4;
+
+    public $id, $name, $base, $hatched_at, $last_raced_at;
+
+    public function __construct($row){
+        $this->id = intval($row->id);
+        $this->name = $row->name;
+        $this->hatched_at = intval($row->hatched_at);
+        $this->last_raced_at = $row->last_raced_at===null ? null : intval($row->last_raced_at);
+        $this->base = array();
+        foreach (self::$STATS as $stat=>$abbr){
+            $this->base[$stat] = intval($row->$stat);
+        }
+    }
+
+    // Hatch a new worm into the stable. Returns its id, or false if the name's taken.
+    public static function hatch($name){
+        $db = _db();
+        if (count($db->query("SELECT id FROM worms WHERE name='".$db->escape($name)."'")) > 0)
+            return false;
+        $keyvals = array('name'=>$name, 'hatched_at'=>time());
+        foreach (self::$STATS as $stat=>$abbr){
+            $keyvals[$stat] = mt_rand(1,6) + mt_rand(1,6) + mt_rand(1,6);
+        }
+        $db->insert(array('table'=>'worms', 'keyvals'=>$keyvals));
+        return $db->insert_id();
+    }
+
+    public static function modifier($score){
+        return intval(floor(($score - 10) / 2));
+    }
+
+    // The stat with its biorhythm at time $t.
+    public function stat($stat, $t){
+        return $this->base[$stat] + intval(round(self::BIO_SWING * sin($this->phase($stat, $t))));
+    }
+
+    // Is the stat's biorhythm on the way up at time $t?
+    public function rising($stat, $t){
+        return cos($this->phase($stat, $t)) >= 0;
+    }
+
+    private function phase($stat, $t){
+        $days = ($t - $this->hatched_at) / 86400;
+        return 2 * M_PI * $days / self::$CYCLE_DAYS[$stat];
+    }
+
+    // The rest between races, in seconds, that keeps this worm sharp. A worm
+    // with more Constitution recovers sooner and stays sharp longer.
+    public function sweet_spot(){
+        $con = $this->base['constitution'];
+        $from = (24 - $con) * 60;            // 6 to 21 minutes
+        $to = $from + $con * 120;            // plus 6 to 36 minutes
+        return array($from, $to);
+    }
+
+    // How far, in seconds, this worm's rest at $t is outside its sweet spot.
+    public function off_sweet_spot($t){
+        if ($this->last_raced_at===null)
+            return 0;
+        list($from, $to) = $this->sweet_spot();
+        $rest = $t - $this->last_raced_at;
+        if ($rest < $from)
+            return $from - $rest;
+        if ($rest > $to)
+            return $rest - $to;
+        return 0;
+    }
+
+    // Fatigue (raced too recently) and rust (hasn't raced in too long) at $t.
+    // Fatigue comes off the threshold; rust comes off Wriggle and Stamina.
+    public function form($t){
+        $form = array('fatigue'=>0, 'rust'=>0, 'label'=>'sharp');
+        if ($this->last_raced_at===null)
+            return $form;
+        list($from, $to) = $this->sweet_spot();
+        $rest = $t - $this->last_raced_at;
+        if ($rest < $from){
+            $form['fatigue'] = intval(ceil(($from - $rest) / $from * self::MAX_FORM_PENALTY));
+            $form['label'] = 'tired';
+        }
+        elseif ($rest > $to){
+            $form['rust'] = min(self::MAX_FORM_PENALTY, intval(floor(($rest - $to) / 3600)) + 1);
+            $form['label'] = 'rusty';
+        }
+        return $form;
+    }
+
+    // Everything a race needs to know about this worm at $t.
+    public function race_entry($t, $weather){
+        $stats = array();
+        $rising = array();
+        foreach (self::$STATS as $stat=>$abbr){
+            $stats[$stat] = $this->stat($stat, $t);
+            $rising[$stat] = $this->rising($stat, $t);
+        }
+        $form = $this->form($t);
+        $wriggle = self::modifier($stats['wriggle'] - $form['rust']);
+        $stamina = self::modifier($stats['stamina'] - $form['rust']);
+        $favored = $weather['favors'] ? self::modifier($stats[$weather['favors']]) : 0;
+        $points = $wriggle + $weather['shift'] + $favored - $form['fatigue'];
+        $early = worm_races::STEP_CHANCE + $points * worm_races::POINT;
+        $late = $early + $stamina * worm_races::POINT;
+        return array(
+            'id' => $this->id,
+            'name' => $this->name,
+            'stats' => $stats,
+            'rising' => $rising,
+            'form' => $form['label'],
+            'early' => max(worm_races::MIN_CHANCE, min(worm_races::MAX_CHANCE, $early)),
+            'late' => max(worm_races::MIN_CHANCE, min(worm_races::MAX_CHANCE, $late)),
+        );
+    }
+}
+
+// The track's weather, one condition per hour. Each day is fair, wet or hot,
+// and the hours of the day run through that kind of day's pattern. A condition
+// shifts everyone's threshold and adds the modifier of the stat it favors.
+class worm_weather{
+
+    public static $CONDITIONS = array(
+        'Mild'      => array('shift'=> 0, 'favors'=>null,           'note'=>"Nothing to it."),
+        'Cool'      => array('shift'=>-1, 'favors'=>'constitution', 'note'=>"Sluggish going; hardy worms do better."),
+        'Dew'       => array('shift'=> 1, 'favors'=>'wriggle',      'note'=>"A slick track; wrigglers fly."),
+        'Dry'       => array('shift'=> 0, 'favors'=>'wriggle',      'note'=>"A fast, hard track."),
+        'Drizzle'   => array('shift'=> 0, 'favors'=>'grit',         'note'=>"Getting soft; gritty worms dig in."),
+        'Rain'      => array('shift'=>-2, 'favors'=>'grit',         'note'=>"Heavy going; grit counts."),
+        'Mud'       => array('shift'=>-3, 'favors'=>'grit',         'note'=>"A bog. Only grit gets through."),
+        'Scorching' => array('shift'=>-2, 'favors'=>'constitution', 'note'=>"Baking hot; hardy worms hold up."),
+    );
+
+    // Night (22-4), morning (5-9), midday (10-16) and evening (17-21) by kind of day.
+    public static $DAYS = array(
+        'fair' => array('Cool', 'Dew', 'Dry', 'Mild'),
+        'wet'  => array('Mud', 'Drizzle', 'Rain', 'Mud'),
+        'hot'  => array('Mild', 'Mild', 'Scorching', 'Dry'),
+    );
+
+    public static function at($t){
+        $day = date('Y-m-d', $t);
+        $kinds = array('fair', 'fair', 'fair', 'wet', 'hot');
+        $kind = $kinds[abs(crc32("worm weather ".$day)) % count($kinds)];
+        $hour = intval(date('G', $t));
+        if ($hour >= 22 || $hour <= 4)
+            $part = 0;
+        elseif ($hour <= 9)
+            $part = 1;
+        elseif ($hour <= 16)
+            $part = 2;
+        else
+            $part = 3;
+        return self::named(self::$DAYS[$kind][$part]);
+    }
+
+    public static function named($name){
+        if (!isset(self::$CONDITIONS[$name]))
+            $name = 'Mild';
+        return array_merge(array('name'=>$name), self::$CONDITIONS[$name]);
     }
 }
 ?>
