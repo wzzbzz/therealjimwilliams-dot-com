@@ -10,7 +10,7 @@ require_once("_lib/php/user/user.php");
 
 class attrib extends command{
     
-    public function _execute(){
+    public function _execute($args = null){
         
         $user = new user();
         if (!($user->session_logged_in($this->session_id))){

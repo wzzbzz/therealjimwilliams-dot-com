@@ -171,7 +171,7 @@ class item{
         if ($attributes == null){
             $attributes = $this->attributes;
         }
-        $sql = "UPDATE items SET attributes='$attributes' WHERE id='".$this->id."'";
+        $sql = "UPDATE items SET attributes='".$this->db->escape($attributes)."' WHERE id='".intval($this->id)."'";
         $result = $this->db->query($sql);
         return;
     }
@@ -245,10 +245,12 @@ class item{
     
     //takes a phrase and checks to see if it describes an item, and returns the item name / id.
     public function is_item($words){
+        if (!is_array($words)) $words = array($words);
         $words_in=array();
         foreach($words as $word){
-            $words_in[]="'".$word."'";    
+            $words_in[]="'".$this->db->escape($word)."'";    
         }
+        if (count($words_in)==0) return false;
         $words = implode(",",$words_in);
         $sql = "SELECT * from item_types WHERE name IN ($words)";
         $item_type = $this->db->query($sql);
@@ -261,12 +263,16 @@ class item{
     public function get_type_field($field){
         $sql = "SELECT $field FROM item_types WHERE id='".$this->type_id."'";
         $type_field = $this->db->query($sql);
-        if (count($field)==0){
+        if (count($type_field)==0){
             return false;
         }
         return $type_field[0]->$field;
     }
     
+    public function set_title($val){
+        $this->update_field("title", $this->db->escape($val));
+        $this->title = $val;
+    }
     protected function update_field($field,$val){
         $sql = "UPDATE items SET $field='$val' WHERE id='".$this->id."'";
         $this->db->query($sql);
@@ -284,7 +290,7 @@ class item{
         $item_type_values = implode(",",$item_type_values);
         $sql = "INSERT INTO items (name,type_id,title,description,attributes) VALUES ($item_type_values)";
         $item = $this->db->query($sql);
-        $id = mysql_insert_id();
+        $id = $this->db->insert_id();
         $sql = "INSERT into item_locations (item_id, location_id) VALUES ($id,0)";
         $this->db->query($sql);
         return $id;

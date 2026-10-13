@@ -9,8 +9,7 @@ class connect extends action{
     
     public function _execute($args){
         $user = _user();
-        if ($user_id = $user->get_logged_in_user_id() != 7)
-        {
+        if (!$user->user_has_permission('manage_locations')){
             $result=array();
             $result['action']="OUTPUT";
             $result['data']="who do you think you are, the real jim williams?";
@@ -42,6 +41,14 @@ class connect extends action{
         $loc = _location();
         
         $loc->set($user->get_location_id());
+
+        $dest_check = _location();
+        if (!$dest_check->set($args[0])){
+            $result=array();
+            $result["action"]="OUTPUT";
+            $result["data"]="No such location #".intval($args[0]).".";
+            return $result;
+        }
 
         $loc_conn = new location_connections();
         $id = $loc_conn->create();

@@ -14,6 +14,7 @@ class user{
     public function __construct(){
         define("USERPATH",BASEPATH."users/");
         $this->db = _db();
+        require_once(BASEPATH."/_lib/php/user/roles.php");
     }
     
     public function set($id){
@@ -32,6 +33,46 @@ class user{
         }
     }
     
+    // PRIVATE: read a user's roles array straight from the DB, mutating no object state.
+    // One query, no $this->set(), no stdClass surprises beyond the documented shape.
+    private function fetch_roles($user_id){
+        $user_id = (int)$user_id;
+        if ($user_id <= 0){ return array(); }                 // no/invalid id -> no roles
+        $rows = $this->db->query("SELECT attributes FROM users WHERE id='$user_id'");
+        if (count($rows) == 0){ return array(); }             // missing row -> no roles
+        $attrs = json_decode($rows[0]->attributes);           // JSON object -> stdClass
+        if (!isset($attrs->roles) || !is_array($attrs->roles)){
+            return array();                                   // no/malformed roles -> none
+        }
+        return $attrs->roles;                                 // JSON array -> PHP array
+    }
+
+    // PUBLIC: role strings held by a given user id. Stateless w.r.t. $this.
+    public function get_user_roles($user_id){
+        return $this->fetch_roles($user_id);
+    }
+
+    // True if the logged-in user holds $role.
+    public function user_has_role($role){
+        $user_id = $this->get_logged_in_user_id();
+        if (!$user_id){ return false; }                       // not logged in -> no role
+        return in_array($role, $this->fetch_roles($user_id), true);
+    }
+
+    // True if the logged-in user has $permission via any role they hold.
+    public function user_has_permission($permission){
+        $user_id = $this->get_logged_in_user_id();
+        if (!$user_id){ return false; }
+        $roles = $this->fetch_roles($user_id);
+        $map = isset($GLOBALS['ROLE_PERMISSIONS']) ? $GLOBALS['ROLE_PERMISSIONS'] : array();
+        foreach ($roles as $role){
+            if (isset($map[$role]) && in_array($permission, $map[$role], true)){
+                return true;
+            }
+        }
+        return false;
+    }
+
     public function save_attributes(){
         $attr = json_encode($this->attributes);
         $sql = "UPDATE users SET attributes='$attr' WHERE id='".$this->id."'";
@@ -50,7 +91,7 @@ class user{
     }
     
     public function create_user($u,$p){
-        $created = $this->db->insert(array('table'=>'users','keyvals'=>array("username"=>$u, "password"=>md5($p))));
+        $created = $this->db->insert(array('table'=>'users','keyvals'=>array("username"=>$u, "password"=>md5($p), "attributes"=>"{}")));
         if(true==$created)
         {
             $sql = "SELECT id FROM users WHERE username='$u'";
@@ -64,9 +105,8 @@ class user{
     
     public function initialize_character($user_id)
     {
-        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0"}';
+        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0,"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0"}';
         $sql = "UPDATE users SET attributes='$attr' WHERE id='".$user_id."'";
-        diebug($sql);
         $this->db->query($sql);
     }
     
@@ -104,7 +144,7 @@ class user{
     }
     
     public function checkpass($u,$p){
-        $sql = "SELECT * FROM users WHERE username='$u' AND password='".md5(strtoupper($p))."';";
+        $sql = "SELECT * FROM users WHERE username='$u' AND password='".md5($p)."';";
         $result = $this->db->query($sql);
         if (count($result))
             return true;

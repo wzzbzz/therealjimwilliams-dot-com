@@ -2,7 +2,14 @@
 //require_once('_lib/includer.php');
 //require_once('definitions.php');
 
-define ("BASEPATH",'/Users/James/Code/blackbart/therealjimwilliams.com/');
+// Local dev on modern PHP: keep notices/deprecations out of the response body.
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
+
+// Align PHP's clock with MySQL (which runs in local/Eastern time) so scheduled
+// events (event_time < NOW()) fire correctly. Mismatch here = elevator stuck "en route".
+date_default_timezone_set('America/New_York');
+
+define ("BASEPATH",'/Users/jamespwilliams/Projects/therealjimwilliams/therealjimwilliams.com/');
 
 
 //always be setting session
@@ -14,7 +21,7 @@ if(!$ok){
 }
 extract($_REQUEST);
 
-if(strlen($PHPSESSID))
+if(isset($PHPSESSID) && strlen($PHPSESSID))
 {
     session_id($PHPSESSID);
 }

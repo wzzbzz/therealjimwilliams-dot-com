@@ -28,7 +28,7 @@ class stand extends action{
         return $result;
     }
     
-    public function can($args){
+    public function can($args = null){
         $user = _user();
         $user_id = $user->get_logged_in_user_id();
         $user->set($user_id);

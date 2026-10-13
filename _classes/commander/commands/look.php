@@ -10,7 +10,7 @@ require_once("_lib/php/user/user.php");
 
 class look extends command{
     
-    public function _execute(){
+    public function _execute($args = null){
         
         $user = new user();
         if (!($user->session_logged_in($this->session_id))){
@@ -23,7 +23,7 @@ class look extends command{
         $user->set($user_id);
         $location_data = $user->get_location($user_id);
         
-        if (count($location_data)==0){
+        if (empty($location_data)){
             //user is nowhere.  Move to limbo.
             $user->set_location($user_id, 1);
             $location_data = $user->get_location($user_id);
@@ -101,7 +101,20 @@ class look extends command{
         else{
             foreach($connections as $connection){
                 if ($door = $connection->get_restriction("door")){
-                    $exits .= "<div>A door leading ".$directions[strtoupper($connection->get_direction())]."</div>";
+                    $door_state = "";
+                    $door_row = $this->db->query("SELECT attributes FROM items WHERE id='".intval($door)."'");
+                    if (count($door_row)>0){
+                        $door_attr = json_decode($door_row[0]->attributes);
+                        if ($door_attr){
+                            if (!empty($door_attr->locked)){
+                                $door_state = " (locked)";
+                            }
+                            elseif (isset($door_attr->state)){
+                                $door_state = " (".$door_attr->state.")";
+                            }
+                        }
+                    }
+                    $exits .= "<div>A door leading ".$directions[strtoupper($connection->get_direction())].$door_state."</div>";
                 }
                 else{
                     $newloc = new Location();

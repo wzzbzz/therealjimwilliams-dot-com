@@ -80,7 +80,7 @@ class turn extends action{
         return $result;
     }
     
-    public function can($args){
+    public function can($args = null){
         $words = array();
         foreach($args as $arg){
             $words[]="'".$arg."'";

@@ -30,63 +30,42 @@ class get extends action{
         return $result;
     }
     
-    public function can($args){
+    public function can($args = null){
         $words = array();
         foreach($args as $arg){
             $words[]="'".$arg."'";
         }
         $return = new stdClass();
-       
         if (!($item_type = $this->is_item($words))){
             $return->result=false;
             $return->reason="I don't know what that is.";
         }
         else{
-            $actions = $item_type->actions;
-            $actions = json_decode($actions);
+            $actions = json_decode($item_type->actions);
             if (array_search("get",$actions)===FALSE){
                 $return->result=false;
                 $return->reason="That is ungettable.";
             }
+            else if (!($items=$this->is_item_in_location($item_type))){
+                $return->result=false;
+                $return->reason="You can't see a ".$item_type->name." here";
+            }
             else{
-                if (!($items=$this->is_item_in_location($item_type))){
-                    $return->result=false;
-                    $return->reason="You can't see a ".$item_type->name." here";
-                }
-                else{
-                    
-                    if (count($items)>1){
-                        
-                        $phrase = implode(" ", $args);
-                        $phrase = strtolower(str_replace("the ","",$phrase));
-                        
-                        foreach($items as $item){
-                            $attributes = json_decode($item->attributes);
-                            $alias = strtolower($attributes->alias);
-                            if ($alias==$phrase){
-                                $return->result=true;
-                                $return->item = $item;
-                                break;
-                            }
-                            else{
-                                //drop one
-                               // $return->result=false;
-                               // $return->reason="Which ".$item_type->name." did you mean?";
-                            }
-                            
+                $return->item = $items[0];
+                if (count($items)>1){
+                    $phrase = strtolower(str_replace("the ","",implode(" ", $args)));
+                    foreach($items as $item){
+                        $attributes = json_decode($item->attributes);
+                        $alias = isset($attributes->alias) ? strtolower($attributes->alias) : "";
+                        if ($alias!=="" && $alias==$phrase){
+                            $return->item = $item;
+                            break;
                         }
                     }
-                    
-                    else{
-                        $return->result=true;
-                        $return->item=$items[0];
-                    }
-                    
                 }
-                
+                $return->result=true;
             }
         }
-        
         return $return;
     }
     

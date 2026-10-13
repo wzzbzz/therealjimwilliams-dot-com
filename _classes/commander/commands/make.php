@@ -7,14 +7,6 @@ class make extends action{
     
     public function _execute($args){
         $user = _user();
-       if ($user_id = $user->get_logged_in_user_id() != 7)
-        {
-            $result=array();
-            $result['action']="OUTPUT";
-            $result['data']="who do you think you are, the real jim williams?";
-            return $result;
-        }
-        
         _items();
         $user->set($user->get_logged_in_user_id());
         
@@ -36,6 +28,12 @@ class make extends action{
                 if (!$item_type=$item->is_item($args)){
                     //is the command a location?
                     if ($args[0]=="location"){
+                        if (!$user->user_has_permission('manage_locations')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
                         $location = _location();
                         $new_id = $location->create();
                         if (!$new_id){
@@ -61,6 +59,18 @@ class make extends action{
                     
                     //is it a door
                     if ($args[0]=="door"){
+                        if (!$user->user_has_permission('manage_items')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
+                        if (!$user->get_location_id()){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="You have no location yet - run 'begin' first.";
+                            return $result;
+                        }
                         //require a connection in a direction
                         if (!$args[1]){
                             $result=array();
@@ -94,16 +104,41 @@ class make extends action{
                                 $item->set_attribute("key",$key_id);
                                 $item->save_attributes();
                             }
+                            // optional alias: "make door W [locked] office door"
+                            $alias_words = array_slice($args, 2);
+                            if (isset($alias_words[0]) && $alias_words[0]=="locked"){
+                                $alias_words = array_slice($alias_words, 1);
+                            }
+                            if (count($alias_words) > 0){
+                                $alias = implode(" ", $alias_words);
+                                $item->set_attribute("alias", strtolower($alias));
+                                $item->save_attributes();
+                                $item->set_title($alias);
+                            }
                             $restriction = array();
                             $restriction['door']=$id;
                             $connection->set_restriction("door",$id);
                             $connection->save();
                             $rev_connection = $connection->get_reverse_connection();
-                            $rev_connection->set_restriction("door",$id);
-                            $rev_connection->save();
+                            if ($rev_connection){
+                                $rev_connection->set_restriction("door",$id);
+                                $rev_connection->save();
+                            }
                         }
                     }
                     else{
+                        if (!$user->user_has_permission('manage_items')){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="who do you think you are, the real jim williams?";
+                            return $result;
+                        }
+                        if (!$user->get_location_id()){
+                            $result=array();
+                            $result['action']="OUTPUT";
+                            $result['data']="You have no location yet - run 'begin' first.";
+                            return $result;
+                        }
                         $id = $item->create_item($args[0]);
                         $item->set($id);
                         $item->set_location($user->get_location_id());

@@ -36,13 +36,14 @@ class DB {
         return self::$m_pInstance; 
     }  
     
-    public function connect($db = 'therealjimwilliams')
+    public static function connect($db = 'therealjimwilliams')
     {
         
         switch($_SERVER['HTTP_HOST']){
+            case 'localhost:8080':
+            case '127.0.0.1:8080':
             case 'local.therealjimwilliams.com':
-                $m_link = mysqli_connect('127.0.0.1', 'root', 'vagrant');
-                
+                $m_link = mysqli_connect('127.0.0.1', 'root', '');
                 break;
             default:
                 $m_link = mysqli_connect('mysql.therealjimwilliams.com', 'theduke', 'atriedes');
@@ -57,10 +58,15 @@ class DB {
            // echo "connected";
         }
         
-        mysqli_select_db($db);
+        mysqli_select_db($m_link, $db);
         return $m_link;
     }
     
+    public function escape($s)
+    {
+        return mysqli_real_escape_string(self::$m_link, (string)$s);
+    }
+
     public function insert($i)
     {
         $sql = "INSERT INTO ".$i['table']." ";
@@ -73,7 +79,7 @@ class DB {
             
             $keys[] = $key;
             
-            $vals[] = "'".$val."'";
+            $vals[] = "'".$this->escape($val)."'";
             
         }
 
@@ -83,24 +89,29 @@ class DB {
         $vals = implode(",", $vals);
         
         $sql .= "(".$keys.") VALUES (".$vals.")";
-        $result = mysqli_query($sql);
+        $result = mysqli_query(self::$m_link, $sql);
         
         return $result;
     }
     
     
+    public function insert_id()
+    {
+        return mysqli_insert_id(self::$m_link);
+    }
+
     public function query($sql)
     {
         
         $return = array();
         
-        $result = mysqli_query($sql);
+        $result = mysqli_query(self::$m_link, $sql);
 
         $this->last_query = $sql;
         
-        if (mysqli_error()){
+        if (mysqli_error(self::$m_link)){
             
-            $this->last_error=mysqli_error();
+            $this->last_error=mysqli_error(self::$m_link);
             
         }
         
@@ -113,9 +124,7 @@ class DB {
                     
                 }
             }
-            else{
-                $return = $result;
-            }
+            // non-SELECT (bool result): return empty array so count() downstream is always safe
             
         }
         

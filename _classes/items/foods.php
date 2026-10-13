@@ -50,7 +50,7 @@ class food extends item{
             $item->update_field("title",$damaged_desc);
             $item->update_field("description",$damaged_desc);
         }
-        $user_hunger = $user_hunger - $bite_size;
+        $user_hunger = max(0, $user_hunger - $bite_size);
         $user->set_attribute("hunger",$user_hunger);
         $belly = $user->get_attribute("belly");
         if ($belly==null){

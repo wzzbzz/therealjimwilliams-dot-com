@@ -118,18 +118,17 @@ class Location{
     }
     
     private function restriction_door($door_id){
-                $return = array();
                 _items();
                 $item = new item();
                 $door = $item->get_item($door_id);
 
+                if (!$door){ return false; }            // missing door item -> treat as impassable, not open
+
                 $attributes = json_decode($door->attributes);
 
-                if ($attributes->state=="closed"){
-                    return false;
-                }
-                else
-                    return true;
+                if (!$attributes || !isset($attributes->state)){ return false; }
+
+                return ($attributes->state != "closed");
         
     }
     
@@ -204,7 +203,7 @@ class Location{
     
     public function get_id(){ return $this->id; }
     public function get_name(){ return $this->name; }
-    public function set_name($val){ diebug($val);$this->name = $val; return true; }
+    public function set_name($val){ $this->name = $val; return true; }
     
     public function get_title(){ return $this->title; }
     public function set_title($val){ $this->title = $val; return true; }
@@ -241,9 +240,9 @@ class Location{
         //create a limbo
         $this->set(1);
         $sql = "INSERT INTO locations (name,title,short_desc,long_desc,owner,restrictions,attributes)
-                VALUES ('".$this->name."','".$this->title."','".$this->short_desc."','".$this->long_desc."','".$this->owner."','".$this->restrictions."','".$this->attributes."');";
+                VALUES ('".$this->db->escape($this->name)."','".$this->db->escape($this->title)."','".$this->db->escape($this->short_desc)."','".$this->db->escape($this->long_desc)."','".$this->db->escape($this->owner)."','".$this->db->escape($this->restrictions)."','".$this->db->escape($this->attributes)."');";
         $this->db->query($sql);
-        $id = mysql_insert_id();
+        $id = $this->db->insert_id();
         return $id;
     }
     
@@ -251,7 +250,7 @@ class Location{
         if ($this->id==null){
             return false;
         }
-        $sql = "UPDATE locations SET name='".$this->name."', title='".$this->title."', long_desc='".$this->long_desc."', short_desc='".$this->short_desc."', owner='".$this->owner."', restrictions='".$this->restrictions."', attributes='".$this->attributes."' WHERE id='".$this->id."'";
+        $sql = "UPDATE locations SET name='".$this->db->escape($this->name)."', title='".$this->db->escape($this->title)."', long_desc='".$this->db->escape($this->long_desc)."', short_desc='".$this->db->escape($this->short_desc)."', owner='".$this->db->escape($this->owner)."', restrictions='".$this->db->escape($this->restrictions)."', attributes='".$this->db->escape($this->attributes)."' WHERE id='".$this->id."'";
         $this->db->query($sql);
         return true;
     }
@@ -289,7 +288,7 @@ class Location{
     public function get_items(){
         $sql = "SELECT * FROM item_locations WHERE location_id='".$this->id."'";
         $loc_items = $this->db->query($sql);
-        if (count($items)==0){
+        if (count($loc_items)==0){
             return array();
         }
         $items = array();
@@ -377,6 +376,7 @@ class location_connections{
         return true;
     }
     
+    public function get_id(){ return $this->id; }
     public function get_current_loc(){ return $this->current_loc; }
     public function set_current_loc($loc){ $this->current_loc = $loc; return true; }
     public function get_dest(){ return $this->dest; }
@@ -416,13 +416,20 @@ class location_connections{
     public function create() {
         $sql = "INSERT INTO location_connections (current_loc,dest,direction,restrictions,failure_message) VALUES ('0','0','N','{}','')";
         $this->db->query($sql);
-        $this->set(mysql_insert_id());
+        $this->set($this->db->insert_id());
         return $this->id;
     }
     
     public function get_reverse_connection(){
-        
-        $sql = "SELECT * from location_connections WHERE current_loc='".$this->dest."' AND dest = '".$this->current_loc."'";
+
+        // the way back: from dest to current_loc in the opposite direction, so a
+        // second connection between the same two rooms isn't mistaken for it
+        $opposites = array("n"=>"s","s"=>"n","e"=>"w","w"=>"e","up"=>"down","down"=>"up");
+        $sql = "SELECT * from location_connections WHERE current_loc='".intval($this->dest)."' AND dest = '".intval($this->current_loc)."'";
+        $dir = strtolower($this->direction);
+        if (isset($opposites[$dir])){
+            $sql .= " AND LOWER(direction)='".$opposites[$dir]."'";
+        }
         $rev = $this->db->query($sql);
         if (count($rev)==0)
         {

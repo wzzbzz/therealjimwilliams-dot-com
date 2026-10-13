@@ -8,7 +8,7 @@
 
 class who extends command{
     
-    public function _execute(){
+    public function _execute($args = null){
 
         $sql = "SELECT * from users JOIN live_sessions ON users.id = live_sessions.user_id";
         $users = $this->db->query($sql);
