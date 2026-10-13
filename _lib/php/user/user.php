@@ -144,7 +144,9 @@ class user{
     }
     
     public function checkpass($u,$p){
-        $sql = "SELECT * FROM users WHERE username='$u' AND password='".md5($p)."';";
+        // Older accounts typed at the prompt were saved uppercased (the prompt
+        // used to read keyCode), so accept that form too.
+        $sql = "SELECT * FROM users WHERE username='$u' AND password IN ('".md5($p)."','".md5(strtoupper($p))."');";
         $result = $this->db->query($sql);
         if (count($result))
             return true;

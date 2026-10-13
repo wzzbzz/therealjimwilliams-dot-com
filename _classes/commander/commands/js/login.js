@@ -106,7 +106,12 @@ function login(my_console){
                 }
             }
             else{
-                buff += String.fromCharCode(e.keyCode);
+                // Use e.key so case and symbols come through as typed;
+                // keyCode is always the uppercase letter.
+                if (e.key == "Backspace")
+                    buff = buff.slice(0, -1);
+                else if (e.key.length == 1)
+                    buff += e.key;
             }
         })
     }
@@ -129,7 +134,12 @@ function login(my_console){
                 }
             }
             else{
-                buff += String.fromCharCode(e.keyCode);
+                // Use e.key so case and symbols come through as typed;
+                // keyCode is always the uppercase letter.
+                if (e.key == "Backspace")
+                    buff = buff.slice(0, -1);
+                else if (e.key.length == 1)
+                    buff += e.key;
             }
             });
     }
@@ -139,7 +149,7 @@ function login(my_console){
         my_login = this;
         $.ajax({
             url : "create_user.php",
-            data : "u="+my_login.username+"&p="+my_login.password,
+            data : {u: my_login.username, p: my_login.password},
             success : function(d){
                 my_console.print("CREATED USER "+my_login.username);
                 my_console.print("YOU MAY NOW LOG IN WITH YOUR USERNAME / PASSWORD");
@@ -155,7 +165,7 @@ function login(my_console){
         $.ajax({
          type: 'GET',
             url: 'dologin.php',
-            data: "u="+my_login.username+"&p="+my_login.password+"&d="+my_login.domain,
+            data: {u: my_login.username, p: my_login.password, d: my_login.domain},
             success: function(d){
                 my_console.print(d['message']);
                 my_console.show_command();
