@@ -26,3 +26,8 @@ WHERE NOT EXISTS (SELECT 1 FROM commands WHERE command = 'BUY');
 INSERT INTO commands (command, type, listed)
 SELECT 'MENU', 'OUTPUT', 1
 WHERE NOT EXISTS (SELECT 1 FROM commands WHERE command = 'MENU');
+
+-- `set location attribute farm yes` needs the SET command, which had no row.
+INSERT INTO commands (command, type, listed)
+SELECT 'SET', 'OUTPUT', 0
+WHERE NOT EXISTS (SELECT 1 FROM commands WHERE command = 'SET');
