@@ -45,3 +45,6 @@ of them is safe.)
 - `0004_add_food_truck.sql` — adds the `truck` item type and registers the
   `buy` and `menu` commands (plus the missing `set` row). An admin places a truck with `make truck` and marks
   the restock spot with `set location attribute farm yes`.
+- `0005_add_worm_races.sql` — adds the `worm_races` table and registers the
+  `watch` command. An admin marks the racetrack with
+  `set location attribute racetrack yes`; players there type `watch`.
