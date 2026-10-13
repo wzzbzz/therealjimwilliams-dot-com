@@ -42,3 +42,6 @@ of them is safe.)
 - `0003_add_disconnect_command.sql` — registers the `disconnect` command row so
   the `disconnect <dir>` admin command (in
   `_classes/commander/commands/disconnect.php`) is dispatchable (playfix issue #6).
+- `0004_add_food_truck.sql` — adds the `truck` item type and registers the
+  `buy` and `menu` commands. An admin places a truck with `make truck` and marks
+  the restock spot with `set location attribute farm yes`.
