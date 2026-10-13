@@ -10,6 +10,7 @@ $logged = $db->insert(array('table'=>'visitors','keyvals'=>array("domain"=>'ther
 <html>
 <head>
 <title>Who is the real Jim Williams?</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <?php _basejs();?>
 <script type="text/javascript" src="/js/jw_console.js"></script>
 <script type="text/javascript">
@@ -126,6 +127,20 @@ input{
     background:none;
     border:none;
 }
+
+#output{
+    overflow-wrap:break-word;
+}
+
+#f{
+    display:flex;
+}
+
+#a{
+    flex:1;
+    min-width:0;
+    padding:0;
+}
 .apple input{
     color:#33ff66;
     font-family:apple;
@@ -160,7 +175,7 @@ input{
     <div id="output"></div>
     <div id = "input">
         <form action="" id="f" autocomplete = "off">
-            ]<input type="text" name="a" id="a" />
+            ]<input type="text" name="a" id="a" autocapitalize="off" autocorrect="off" spellcheck="false" />
         </form>
     </div>
 </div>
