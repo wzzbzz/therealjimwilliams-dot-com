@@ -8,7 +8,7 @@
 --
 --   set location attribute racetrack yes    (in the room with the track)
 --
--- A race starts every 10 minutes. Each row is one race's saved number sequence
+-- A race starts every 2 minutes. Each row is one race's saved number sequence
 -- (one array of lane numbers per tick), made the first time someone watches,
 -- so every player replays the same race.
 --

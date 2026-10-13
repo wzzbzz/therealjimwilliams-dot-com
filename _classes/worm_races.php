@@ -10,7 +10,7 @@
 // tuned by hand; keep them in sync with js/worm_race.js.
 class worm_races{
 
-    const SLOT = 600;        // seconds between race starts
+    const SLOT = 120;        // seconds between race starts
     const LANES = 5;
     const STEP_CHANCE = 20;  // a worm steps when its number is under this
     const STEP_PX = 5;       // pixels per step
