@@ -17,7 +17,8 @@ $(document).ready(function(){
     my_console = new jw_console();
     $("#f").submit(function(e){
         e.preventDefault();
-        my_console.print($("#a").val());
+        my_console.remember($("#a").val());
+        my_console.print("]"+$("#a").val());
         $.ajax({
             type: 'POST',
             url: 'listen.php',
@@ -36,6 +37,17 @@ $(document).ready(function(){
         $("#a").focus();
         $(document).scrollTop($(document).height());
         return false;
+    });
+
+    $("#a").keydown(function(e){
+        if (e.which == 38){
+            e.preventDefault();
+            my_console.recall(-1);
+        }
+        else if (e.which == 40){
+            e.preventDefault();
+            my_console.recall(1);
+        }
     });
     
 	getEvents();

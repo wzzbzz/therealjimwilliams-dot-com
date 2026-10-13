@@ -4,6 +4,9 @@ function jw_console(){
     
     this.output = $("#output");
     this.input = $("#input");
+
+    this.history = [];
+    this.history_pos = 0;
     
     jw_console.prototype.clear = function(){
         this.output.text("");
@@ -26,6 +29,23 @@ function jw_console(){
         console.log("setting focus");
         this.input.find("form#f input#a").focus();
         $("html").scrollTo($(document).height()+9999);
+    }
+
+    jw_console.prototype.remember = function(command){
+        if (command != "" && command != this.history[this.history.length-1]){
+            this.history.push(command);
+        }
+        this.history_pos = this.history.length;
+    }
+
+    jw_console.prototype.recall = function(step){
+        var pos = this.history_pos + step;
+        if (pos < 0 || pos > this.history.length){
+            return;
+        }
+        this.history_pos = pos;
+        var command = pos < this.history.length ? this.history[pos] : "";
+        this.input.find("input#a").val(command);
     }
 
     jw_console.prototype.append = function(dom){
