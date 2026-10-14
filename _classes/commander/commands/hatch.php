@@ -28,7 +28,7 @@ class hatch extends command{
         foreach (worm::$STATS as $stat=>$abbr){
             $stats[] = "$abbr ".$worm->base[$stat];
         }
-        $result['data'] = htmlspecialchars($worm->name)." wriggles out of its egg. ".implode(" &nbsp; ", $stats);
+        $result['data'] = htmlspecialchars($worm->name)." wriggles out of its egg. ".implode(" &nbsp; ", $stats)." &nbsp; RTG ".$worm->rating;
         return $result;
     }
 }

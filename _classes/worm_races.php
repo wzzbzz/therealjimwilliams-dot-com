@@ -51,10 +51,13 @@ class worm_races{
             if (count($lineup) < 2)
                 return false;
             $race = $this->generate($lineup);
+            foreach ($race['places'] as $i=>$place){
+                $lineup[$i]['place'] = $place;
+            }
             // INSERT IGNORE: if two players ask at once, the first sequence wins.
             $this->db->query("INSERT IGNORE INTO worm_races (start_time, ticks, winner, weather, lineup) VALUES ('$start', '".json_encode($race['ticks'])."', '".intval($race['winner'])."', '".$this->db->escape($weather['name'])."', '".$this->db->escape(json_encode($lineup))."')");
             if ($this->db->insert_id()){
-                $this->record_results($start, $lineup, $race['winner']);
+                $this->record_results($start, $lineup);
             }
             $rows = $this->db->query("SELECT * FROM worm_races WHERE start_time='$start'");
         }
@@ -94,7 +97,7 @@ class worm_races{
             foreach (worm::$STATS as $stat=>$abbr){
                 $stats[] = $abbr." ".$worm['stats'][$stat].($worm['rising'][$stat] ? "&uarr;" : "&darr;");
             }
-            $output .= "<div>Lane ".($i+1).": ".htmlspecialchars($worm['name'])." &nbsp; ".implode(" &nbsp; ", $stats)." &nbsp; (".$worm['form'].")</div>";
+            $output .= "<div>Lane ".($i+1).": ".htmlspecialchars($worm['name'])." &nbsp; RTG ".$worm['rating']." &nbsp; ".implode(" &nbsp; ", $stats)." &nbsp; (".$worm['form'].")</div>";
         }
         return $output;
     }
@@ -120,10 +123,23 @@ class worm_races{
         return $lineup;
     }
 
-    private function record_results($start, $lineup, $winner){
+    // Mark the lineup as raced and move each worm's rating: every pair of
+    // worms in the race counts as a head-to-head, Elo style, so beating
+    // higher-rated worms gains more than beating lower-rated ones.
+    private function record_results($start, $lineup){
+        $n = count($lineup);
         foreach ($lineup as $i=>$worm){
-            $won = ($i+1 == $winner) ? 1 : 0;
-            $this->db->query("UPDATE worms SET last_raced_at='".intval($start)."', races=races+1, wins=wins+$won WHERE id='".intval($worm['id'])."'");
+            $delta = 0;
+            foreach ($lineup as $j=>$other){
+                if ($i==$j)
+                    continue;
+                $expected = 1 / (1 + pow(10, ($other['rating'] - $worm['rating']) / worm::RATING_SPREAD));
+                $score = $worm['place'] < $other['place'] ? 1 : 0;
+                $delta += worm::RATING_K * ($score - $expected) / ($n - 1);
+            }
+            $rating = max(1, intval(round($worm['rating'] + $delta)));
+            $won = $worm['place']==1 ? 1 : 0;
+            $this->db->query("UPDATE worms SET last_raced_at='".intval($start)."', races=races+1, wins=wins+$won, rating='$rating' WHERE id='".intval($worm['id'])."'");
         }
     }
 
@@ -154,7 +170,21 @@ class worm_races{
             if ($leader!==null && $positions[$leader] > self::DISTANCE)
                 break;
         }
-        return array('ticks'=>$ticks, 'winner'=>$leader);
+        // Finishing places by distance covered; on a tie the earlier lane
+        // places higher, and the winner is always first.
+        $order = array_keys($positions);
+        usort($order, function($a, $b) use ($positions, $leader){
+            if ($a==$leader) return -1;
+            if ($b==$leader) return 1;
+            if ($positions[$a] != $positions[$b])
+                return $positions[$a] > $positions[$b] ? -1 : 1;
+            return $a < $b ? -1 : 1;
+        });
+        $places = array();
+        foreach ($order as $place=>$lane){
+            $places[$lane-1] = $place + 1;
+        }
+        return array('ticks'=>$ticks, 'winner'=>$leader, 'places'=>$places);
     }
 }
 
@@ -166,14 +196,17 @@ class worm{
     public static $CYCLE_DAYS = array('wriggle'=>23, 'stamina'=>28, 'constitution'=>33, 'grit'=>38);
     const BIO_SWING = 2;
     const MAX_FORM_PENALTY = 4;
+    const RATING_K = 8;        // most a rating can move in one race
+    const RATING_SPREAD = 40;  // a 40-point gap makes the better worm a 10-to-1 favorite head-to-head
 
-    public $id, $name, $base, $hatched_at, $last_raced_at;
+    public $id, $name, $base, $hatched_at, $last_raced_at, $rating;
 
     public function __construct($row){
         $this->id = intval($row->id);
         $this->name = $row->name;
         $this->hatched_at = intval($row->hatched_at);
         $this->last_raced_at = $row->last_raced_at===null ? null : intval($row->last_raced_at);
+        $this->rating = intval($row->rating);
         $this->base = array();
         foreach (self::$STATS as $stat=>$abbr){
             $this->base[$stat] = intval($row->$stat);
@@ -186,9 +219,13 @@ class worm{
         if (count($db->query("SELECT id FROM worms WHERE name='".$db->escape($name)."'")) > 0)
             return false;
         $keyvals = array('name'=>$name, 'hatched_at'=>time());
+        $modifiers = 0;
         foreach (self::$STATS as $stat=>$abbr){
             $keyvals[$stat] = mt_rand(1,6) + mt_rand(1,6) + mt_rand(1,6);
+            $modifiers += self::modifier($keyvals[$stat]);
         }
+        // Starting rating from its stats: 50 for an average worm. Races move it from there.
+        $keyvals['rating'] = max(1, 50 + 3 * $modifiers);
         $db->insert(array('table'=>'worms', 'keyvals'=>$keyvals));
         return $db->insert_id();
     }
@@ -271,6 +308,7 @@ class worm{
         return array(
             'id' => $this->id,
             'name' => $this->name,
+            'rating' => $this->rating,
             'stats' => $stats,
             'rising' => $rising,
             'form' => $form['label'],
