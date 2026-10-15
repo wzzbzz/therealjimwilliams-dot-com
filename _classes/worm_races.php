@@ -60,6 +60,8 @@ class worm_races{
                 $this->record_results($start, $lineup);
             }
             $rows = $this->db->query("SELECT * FROM worm_races WHERE start_time='$start'");
+            if (count($rows)==0)
+                return false;
         }
         $race = $rows[0];
         return array(
@@ -69,7 +71,73 @@ class worm_races{
             'winner' => intval($race->winner),
             'weather' => worm_weather::named($race->weather),
             'lineup' => json_decode($race->lineup, true),
+            'announced' => intval($race->announced),
         );
+    }
+
+    // Keep the races running and tell everyone at the track. Called on every
+    // event poll (get_events.php), so races run whenever anyone's online, not
+    // only while someone is watching. Once the current race is over it
+    // announces the winner, then the next race's card, each exactly once.
+    public function run_schedule($now=null){
+        if ($now===null)
+            $now = microtime(true);
+        $race = $this->get_race($this->current_start($now));
+        if (!$race)
+            return;
+        if (($now - $race['start']) * 1000 < $this->duration_ms($race))
+            return;
+        if ($race['announced'] < 2 && $this->claim($race, 2)){
+            $winner = $race['lineup'][$race['winner']-1]['name'];
+            $this->announce($race['id'], "<div>".htmlspecialchars($winner)." wins the race!</div>");
+        }
+        $next = $this->get_race($race['start'] + self::SLOT);
+        if ($next && $next['announced'] < 1 && $this->claim($next, 1)){
+            $minutes = max(1, ceil(($next['start'] - $now) / 60));
+            $this->announce($next['id'], "<div>The worms are lining up for the next race, in $minutes minute".($minutes==1 ? "" : "s").". Type 'watch' to see it.</div>".$this->racecard($next));
+        }
+    }
+
+    // Move a race's announcement stage up to $stage. True only for the one
+    // caller whose update did it, so two players polling at once don't both
+    // announce.
+    private function claim($race, $stage){
+        $token = uniqid('', true);
+        $this->db->query("UPDATE worm_races SET announced='".intval($stage)."', claim='$token' WHERE id='".intval($race['id'])."' AND announced < '".intval($stage)."'");
+        $rows = $this->db->query("SELECT claim FROM worm_races WHERE id='".intval($race['id'])."'");
+        return count($rows) > 0 && $rows[0]->claim == $token;
+    }
+
+    // Print $html for everyone at every racetrack.
+    private function announce($race_id, $html){
+        _event();
+        $script = json_encode(array(
+            'type' => "EXECUTE",
+            'user_id' => 0,
+            'user_name' => "",
+            'js' => "my_console.print(".json_encode($html).");",
+        ));
+        foreach ($this->racetracks() as $location_id){
+            $event = new event(array(
+                'name' => "worm_race_".intval($race_id),
+                'event_time' => date('Y-m-d H:i:s'),
+                'originator' => 0,
+                'location' => $location_id,
+                'event_script' => $script,
+                'callback' => null,
+            ));
+            $event->save();
+        }
+    }
+
+    // Ids of every location marked as a racetrack.
+    private function racetracks(){
+        $ids = array();
+        foreach ($this->db->query("SELECT id FROM locations WHERE attributes LIKE '%racetrack%'") as $row){
+            if ($this->is_racetrack($row->id))
+                $ids[] = intval($row->id);
+        }
+        return $ids;
     }
 
     // Length of a race in milliseconds.

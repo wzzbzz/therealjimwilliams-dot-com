@@ -53,3 +53,6 @@ of them is safe.)
   An admin fills the stable with `hatch <name>`; races need at least two worms.
 - `0007_add_stable_command.sql` — registers the `stable` command (the worm
   list at the racetrack).
+- `0008_add_race_announcements.sql` — adds `announced` and `claim` to
+  `worm_races` so each race's card and winner are announced at the racetrack
+  once. Races now run on every event poll, whenever anyone's online.
