@@ -39,17 +39,17 @@ class DB {
     public static function connect($db = 'therealjimwilliams')
     {
         
-        switch($_SERVER['HTTP_HOST']){
-            case 'localhost:8080':
-            case '127.0.0.1:8080':
-            case 'local.therealjimwilliams.com':
-                $m_link = mysqli_connect('127.0.0.1', 'root', '');
-                break;
-            default:
-                $m_link = mysqli_connect('mysql.therealjimwilliams.com', 'theduke', 'atriedes');
-                break;
+        // Live credentials live in db_config.php next to this file, which git
+        // ignores (copy db_config.example.php). Without it, connect to the
+        // local dev DB as root with no password.
+        $config = __DIR__.'/db_config.php';
+        if (file_exists($config)){
+            require($config);
+            $m_link = mysqli_connect(DB_HOST, DB_USER, DB_PASS);
         }
-        
+        else{
+            $m_link = mysqli_connect('127.0.0.1', 'root', '');
+        }
         
         if (!$m_link){
             echo "could not conect to database";
