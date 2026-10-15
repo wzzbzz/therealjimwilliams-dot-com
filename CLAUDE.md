@@ -17,7 +17,7 @@ There are no build tools, package managers, or modern tooling. No `composer.json
 
 Database credentials are hardcoded in `_lib/php/database.php`:
 - Local (`local.therealjimwilliams.com`): `127.0.0.1`, user `root`, password `vagrant`
-- Production: `mysql.therealjimwilliams.com`, user `theduke`, password `atriedes`
+- Production: `mysql.therealjimwilliams.com`, user `theduke`; the password is only in `_lib/php/db_config.php` on the server (gitignored, see `db_config.example.php`)
 
 ### NativeX CLI (Cryptstack.com subapp)
 

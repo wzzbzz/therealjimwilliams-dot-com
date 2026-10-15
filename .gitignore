@@ -2,3 +2,5 @@
 */.DS_Store
 # generated per-user nativex scaffolding (runtime artifact)
 _lib/php/nativex/users/
+# live DB credentials (copy _lib/php/db_config.example.php)
+_lib/php/db_config.php
