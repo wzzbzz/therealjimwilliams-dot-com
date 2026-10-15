@@ -17,7 +17,8 @@ $(document).ready(function(){
     my_console = new jw_console();
     $("#f").submit(function(e){
         e.preventDefault();
-        my_console.print($("#a").val());
+        my_console.remember($("#a").val());
+        my_console.print("]"+$("#a").val());
         $.ajax({
             type: 'POST',
             url: 'listen.php',
@@ -37,9 +38,31 @@ $(document).ready(function(){
         $(document).scrollTop($(document).height());
         return false;
     });
+
+    $("#a").keydown(function(e){
+        if (e.which == 38){
+            e.preventDefault();
+            my_console.recall(-1);
+        }
+        else if (e.which == 40){
+            e.preventDefault();
+            my_console.recall(1);
+        }
+    });
     
 	getEvents();
     id = setInterval('getEvents()',1000);
+
+    $("#keys button").click(function(){
+        var step = $(this).data("step");
+        if (step){
+            my_console.recall(step);
+        }
+        else{
+            $("#a").val($(this).data("cmd"));
+            $("#f").submit();
+        }
+    });
 
     $("#a").focus();
 });
@@ -151,6 +174,25 @@ input{
     font-size:14px;
 }
 
+#keys{
+    display:none;
+}
+
+#keys button{
+    font:inherit;
+    color:inherit;
+    background:none;
+    border:1px solid;
+    padding:8px 12px;
+    margin:0 4px 8px 0;
+}
+
+@media (max-width:600px), (pointer:coarse){
+    #keys{
+        display:block;
+    }
+}
+
 #input{
     padding-bottom:40px;
 }
@@ -162,6 +204,15 @@ input{
         <form action="" id="f" autocomplete = "off">
             ]<input type="text" name="a" id="a" />
         </form>
+        <div id="keys">
+            <button type="button" data-step="-1">&uarr;</button>
+            <button type="button" data-step="1">&darr;</button>
+            <button type="button" data-cmd="look">look</button>
+            <button type="button" data-cmd="go n">n</button>
+            <button type="button" data-cmd="go s">s</button>
+            <button type="button" data-cmd="go e">e</button>
+            <button type="button" data-cmd="go w">w</button>
+        </div>
     </div>
 </div>
 </body>
