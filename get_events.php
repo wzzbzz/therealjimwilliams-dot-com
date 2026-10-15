@@ -14,6 +14,11 @@ $events = new events();
 
 $events->process_events();
 
+// Keep the worm races at the racetrack running and announced.
+require_once(BASEPATH."/_classes/worm_races.php");
+$worm_races = new worm_races();
+$worm_races->run_schedule();
+
 $user = _user();
 $user->set($user_id);
 $user->process_user_status();

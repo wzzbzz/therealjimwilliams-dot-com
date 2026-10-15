@@ -285,7 +285,7 @@ class item{
         $item_type_values = array();
         $item_type=$item_type[0];
         foreach($item_type as $item_field){
-            $item_type_values[]="'".$item_field."'";
+            $item_type_values[]="'".$this->db->escape($item_field)."'";
         }
         $item_type_values = implode(",",$item_type_values);
         $sql = "INSERT INTO items (name,type_id,title,description,attributes) VALUES ($item_type_values)";

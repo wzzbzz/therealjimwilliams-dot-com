@@ -4,6 +4,8 @@ require_once(BASEPATH."/_lib/includer.php");
 
 class user{
     
+    const STARTING_MONEY = 20; // dollars a new character starts with
+    
     protected $db;
     protected $attributes;
     protected $id;
@@ -105,7 +107,7 @@ class user{
     
     public function initialize_character($user_id)
     {
-        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0,"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0"}';
+        $attr = '{"status":"ready","position":"standing","piss":0,"shit":0,"hunger":0,"thirst":0,"health":100,"tough":100,"smart":100,"strong":100,"coordinated":100,"height":190,"weight":105,"quick":100,"endurance":100,"fatigue":0,"belly":0,"seat":"0","money":20}';
         $sql = "UPDATE users SET attributes='$attr' WHERE id='".$user_id."'";
         $this->db->query($sql);
     }
@@ -275,6 +277,15 @@ class user{
     
     public function add_attribute($name,$parent){
         
+    }
+    
+    // Money in dollars. Characters made before money existed have no "money"
+    // attribute yet, so they get the same purse a new character starts with.
+    public function get_money(){
+        if (!isset($this->attributes->money)){
+            return self::STARTING_MONEY;
+        }
+        return intval($this->attributes->money);
     }
     
     public function get_location_id(){
