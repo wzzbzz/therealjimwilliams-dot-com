@@ -246,9 +246,14 @@ class worm{
         return cos($this->phase($stat, $t)) >= 0;
     }
 
+    // Where the stat is in its cycle. Each worm starts each cycle at its own
+    // point (fixed by its name), so worms hatched together don't rise and fall
+    // in step.
     private function phase($stat, $t){
-        $days = ($t - $this->hatched_at) / 86400;
-        return 2 * M_PI * $days / self::$CYCLE_DAYS[$stat];
+        $cycle = self::$CYCLE_DAYS[$stat];
+        $offset = (abs(crc32($this->name." ".$stat)) % ($cycle * 1000)) / 1000;
+        $days = ($t - $this->hatched_at) / 86400 + $offset;
+        return 2 * M_PI * $days / $cycle;
     }
 
     // Every worm in the stable, best rating first.
@@ -269,12 +274,18 @@ class worm{
         return array($from, $to);
     }
 
+    // Seconds since the worm last raced. A worm that hasn't raced yet counts
+    // from its hatching, but is never tired.
+    private function rest($t){
+        if ($this->last_raced_at===null)
+            return max($t - $this->hatched_at, $this->sweet_spot()[0]);
+        return $t - $this->last_raced_at;
+    }
+
     // How far, in seconds, this worm's rest at $t is outside its sweet spot.
     public function off_sweet_spot($t){
-        if ($this->last_raced_at===null)
-            return 0;
         list($from, $to) = $this->sweet_spot();
-        $rest = $t - $this->last_raced_at;
+        $rest = $this->rest($t);
         if ($rest < $from)
             return $from - $rest;
         if ($rest > $to)
@@ -286,10 +297,8 @@ class worm{
     // Fatigue comes off the threshold; rust comes off Wriggle and Stamina.
     public function form($t){
         $form = array('fatigue'=>0, 'rust'=>0, 'label'=>'sharp');
-        if ($this->last_raced_at===null)
-            return $form;
         list($from, $to) = $this->sweet_spot();
-        $rest = $t - $this->last_raced_at;
+        $rest = $this->rest($t);
         if ($rest < $from){
             $form['fatigue'] = intval(ceil(($from - $rest) / $from * self::MAX_FORM_PENALTY));
             $form['label'] = 'tired';
