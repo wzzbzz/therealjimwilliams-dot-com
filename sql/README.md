@@ -51,3 +51,5 @@ of them is safe.)
 - `0006_add_worm_stable.sql` — adds the `worms` table, the `weather` and
   `lineup` columns on `worm_races`, and registers the `hatch` admin command.
   An admin fills the stable with `hatch <name>`; races need at least two worms.
+- `0007_add_stable_command.sql` — registers the `stable` command (the worm
+  list at the racetrack).

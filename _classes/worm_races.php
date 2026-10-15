@@ -199,7 +199,7 @@ class worm{
     const RATING_K = 8;        // most a rating can move in one race
     const RATING_SPREAD = 40;  // a 40-point gap makes the better worm a 10-to-1 favorite head-to-head
 
-    public $id, $name, $base, $hatched_at, $last_raced_at, $rating;
+    public $id, $name, $base, $hatched_at, $last_raced_at, $rating, $races, $wins;
 
     public function __construct($row){
         $this->id = intval($row->id);
@@ -207,6 +207,8 @@ class worm{
         $this->hatched_at = intval($row->hatched_at);
         $this->last_raced_at = $row->last_raced_at===null ? null : intval($row->last_raced_at);
         $this->rating = intval($row->rating);
+        $this->races = intval($row->races);
+        $this->wins = intval($row->wins);
         $this->base = array();
         foreach (self::$STATS as $stat=>$abbr){
             $this->base[$stat] = intval($row->$stat);
@@ -247,6 +249,15 @@ class worm{
     private function phase($stat, $t){
         $days = ($t - $this->hatched_at) / 86400;
         return 2 * M_PI * $days / self::$CYCLE_DAYS[$stat];
+    }
+
+    // Every worm in the stable, best rating first.
+    public static function stable(){
+        $worms = array();
+        foreach (_db()->query("SELECT * FROM worms ORDER BY rating DESC, name") as $row){
+            $worms[] = new worm($row);
+        }
+        return $worms;
     }
 
     // The rest between races, in seconds, that keeps this worm sharp. A worm
