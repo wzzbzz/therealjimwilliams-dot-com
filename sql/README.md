@@ -45,3 +45,14 @@ of them is safe.)
 - `0004_add_food_truck.sql` — adds the `truck` item type and registers the
   `buy` and `menu` commands (plus the missing `set` row). An admin places a truck with `make truck` and marks
   the restock spot with `set location attribute farm yes`.
+- `0005_add_worm_races.sql` — adds the `worm_races` table and registers the
+  `watch` command. An admin marks the racetrack with
+  `set location attribute racetrack yes`; players there type `watch`.
+- `0006_add_worm_stable.sql` — adds the `worms` table, the `weather` and
+  `lineup` columns on `worm_races`, and registers the `hatch` admin command.
+  An admin fills the stable with `hatch <name>`; races need at least two worms.
+- `0007_add_stable_command.sql` — registers the `stable` command (the worm
+  list at the racetrack).
+- `0008_add_race_announcements.sql` — adds `announced` and `claim` to
+  `worm_races` so each race's card and winner are announced at the racetrack
+  once. Races now run on every event poll, whenever anyone's online.
