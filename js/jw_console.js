@@ -15,6 +15,11 @@ function jw_console(){
     jw_console.prototype.print = function(text){
         o = "<div>"+text+"</div>";
         this.output.append(o);
+        this.scroll_bottom();
+    }
+
+    jw_console.prototype.scroll_bottom = function(){
+        $(document).scrollTop($(document).height());
     }
     
     jw_console.prototype.hide_command = function(){
@@ -28,7 +33,7 @@ function jw_console(){
         this.input.children("form#f").show();
         console.log("setting focus");
         this.input.find("form#f input#a").focus();
-        $("html").scrollTo($(document).height()+9999);
+        this.scroll_bottom();
     }
 
     jw_console.prototype.remember = function(command){
@@ -50,6 +55,7 @@ function jw_console(){
 
     jw_console.prototype.append = function(dom){
         this.output.append(dom);
+        this.scroll_bottom();
     }
     
     jw_console.prototype.listener = function(){
