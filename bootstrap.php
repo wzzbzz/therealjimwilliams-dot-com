@@ -9,7 +9,7 @@ error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
 // events (event_time < NOW()) fire correctly. Mismatch here = elevator stuck "en route".
 date_default_timezone_set('America/New_York');
 
-define ("BASEPATH",'/Users/jamespwilliams/Projects/therealjimwilliams/therealjimwilliams.com/');
+define ("BASEPATH", __DIR__ . '/');
 
 
 //always be setting session
