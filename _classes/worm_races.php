@@ -170,17 +170,18 @@ class worm_races{
         return $output;
     }
 
-    // The LANES worms nearest their sweet spot at $start, each with its stats,
-    // form and thresholds for this race. Lane order is random.
+    // The LANES most rested worms at $start, each with its stats, form and
+    // thresholds for this race, so the worms that just ran sit out and rusty
+    // ones get worked back in. Lane order is random.
     private function pick_lineup($start, $weather){
         $worms = array();
         foreach ($this->db->query("SELECT * FROM worms ORDER BY id") as $row){
             $worm = new worm($row);
-            $worms[] = array('worm'=>$worm, 'off'=>$worm->off_sweet_spot($start), 'tiebreak'=>mt_rand());
+            $worms[] = array('worm'=>$worm, 'rested'=>$worm->rested($start), 'tiebreak'=>mt_rand());
         }
         usort($worms, function($a, $b){
-            if ($a['off'] != $b['off'])
-                return $a['off'] < $b['off'] ? -1 : 1;
+            if ($a['rested'] != $b['rested'])
+                return $a['rested'] > $b['rested'] ? -1 : 1;
             return $a['tiebreak'] < $b['tiebreak'] ? -1 : 1;
         });
         $lineup = array();
@@ -350,15 +351,10 @@ class worm{
         return $t - $this->last_raced_at;
     }
 
-    // How far, in seconds, this worm's rest at $t is outside its sweet spot.
-    public function off_sweet_spot($t){
-        list($from, $to) = $this->sweet_spot();
-        $rest = $this->rest($t);
-        if ($rest < $from)
-            return $from - $rest;
-        if ($rest > $to)
-            return $rest - $to;
-        return 0;
+    // How recovered this worm is at $t: its rest as a share of the rest it
+    // needs, so under 1 while it's still tired.
+    public function rested($t){
+        return $this->rest($t) / $this->sweet_spot()[0];
     }
 
     // Fatigue (raced too recently) and rust (hasn't raced in too long) at $t.
